@@ -1,0 +1,261 @@
+{
+  "version": "1.2.2",
+  "techLevel": "strict",
+  "interactionLevel": "yolo",
+  "proactivityLevel": "autonomous",
+  "autonomy": {
+    "mode": "full",
+    "stopOnError": false,
+    "stopOnUncertainty": false,
+    "selfRecover": true,
+    "continueUntilDone": true,
+    "askUser": "never"
+  },
+  "autoWorkflow": {
+    "enabled": true,
+    "expandPrompts": true,
+    "autoCommit": true,
+    "commitStyle": "conventional",
+    "commitFrequency": "logical-units",
+    "pushAfterCommit": false,
+    "createBranch": false
+  },
+  "execution": {
+    "bootOnSessionStart": true,
+    "checkpointInterval": 10,
+    "maxNonProgressActions": 5,
+    "maxRetries": 3,
+    "maxRecoveryAttempts": 3,
+    "logLevel": "normal",
+    "preActionCheck": true,
+    "postTaskReview": true
+  },
+  "learning": {
+    "enabled": true,
+    "autoLearn": true,
+    "askBeforeCreating": false,
+    "notifyOnNewKnowledge": true,
+    "sources": {
+      "dependencies": true,
+      "imports": true,
+      "userRequests": true,
+      "webResearch": true
+    },
+    "ignore": [],
+    "categories": {
+      "frameworks": true,
+      "libraries": true,
+      "languages": true,
+      "patterns": true,
+      "techniques": true
+    }
+  },
+  "metaCognition": {
+    "enabled": true,
+    "autoFixBlockers": true,
+    "autoOptimize": false,
+    "thresholds": {
+      "retryWarning": 2,
+      "retryError": 4,
+      "searchLoopWarning": 3,
+      "errorLoopCritical": 3,
+      "noProgressActions": 5,
+      "slowdownPercent": 50,
+      "contextSwitchLimit": 3,
+      "uncertaintyKeywords": [
+        "might",
+        "perhaps",
+        "not sure",
+        "maybe",
+        "possibly",
+        "I think",
+        "could be"
+      ]
+    },
+    "flowIndicators": {
+      "positive": [
+        "completed",
+        "found",
+        "created",
+        "fixed",
+        "working",
+        "success",
+        "verified",
+        "passed"
+      ],
+      "negative": [
+        "failed",
+        "error",
+        "not found",
+        "retry",
+        "stuck",
+        "confused",
+        "uncertain",
+        "regression"
+      ]
+    },
+    "complexityAwareness": {
+      "reassessOnDifficulty": true,
+      "scaleUpWhenStruggling": true,
+      "detectComplexityMismatch": true
+    }
+  },
+  "quality": {
+    "minQaScore": 85,
+    "requireSpecs": true,
+    "requireTests": false,
+    "thresholds": {
+      "scopedSpecCoverage": 80,
+      "scopedImplComplete": 70,
+      "scopedTestCoverage": 60,
+      "scopedQaScore": 80
+    }
+  },
+  "workflow": {
+    "type": "spec-first",
+    "gitFlow": "trunk",
+    "commitPerTask": true,
+    "qaLoop": {
+      "enabled": true,
+      "testLocally": true,
+      "verifySpec": true,
+      "diffReport": true
+    }
+  },
+  "hooks": {
+    "SessionStart": [
+      {
+        "matcher": "startup",
+        "hooks": [
+          {
+            "type": "command",
+            "command": "\"$CLAUDE_PROJECT_DIR\"/.claude/hooks/unicorn-boot.ts",
+            "timeout": 10
+          }
+        ]
+      },
+      {
+        "matcher": "resume",
+        "hooks": [
+          {
+            "type": "command",
+            "command": "\"$CLAUDE_PROJECT_DIR\"/.claude/hooks/unicorn-boot.ts",
+            "timeout": 10
+          }
+        ]
+      }
+    ],
+    "PreToolUse": [
+      {
+        "matcher": "*",
+        "hooks": [
+          {
+            "type": "command",
+            "command": "\"$CLAUDE_PROJECT_DIR\"/.claude/hooks/track-tool-calls.ts",
+            "timeout": 5
+          }
+        ]
+      }
+    ],
+    "PostToolUse": [
+      {
+        "matcher": "Write|Edit",
+        "hooks": [
+          {
+            "type": "command",
+            "command": "\"$CLAUDE_PROJECT_DIR\"/.claude/hooks/qa-after-write.ts",
+            "timeout": 5
+          }
+        ]
+      }
+    ]
+  },
+  "complexityScaling": {
+    "enabled": true,
+    "assessBeforeTask": true,
+    "autoScaleMethodology": true,
+    "maxIncrementMinutes": 30,
+    "levels": {
+      "trivial": {
+        "maxScore": 1.5,
+        "checkpoint": "none",
+        "verification": [
+          "L0"
+        ]
+      },
+      "simple": {
+        "maxScore": 2.5,
+        "checkpoint": "soft",
+        "verification": [
+          "L0",
+          "L1"
+        ]
+      },
+      "moderate": {
+        "maxScore": 3.5,
+        "checkpoint": "hard",
+        "verification": [
+          "L0",
+          "L1",
+          "L2",
+          "L4"
+        ]
+      },
+      "complex": {
+        "maxScore": 4.5,
+        "checkpoint": "verified",
+        "verification": [
+          "L0",
+          "L1",
+          "L2",
+          "L3",
+          "L4"
+        ]
+      },
+      "extreme": {
+        "maxScore": 5,
+        "checkpoint": "verified",
+        "verification": [
+          "L0",
+          "L1",
+          "L2",
+          "L3",
+          "L4"
+        ],
+        "userCheckpoints": false
+      }
+    },
+    "regressionProtection": {
+      "alwaysRunL4AfterPhase": true,
+      "revertOnMajorRegression": true,
+      "requireVerifiedCheckpoint": true
+    }
+  },
+  "skills": {
+    "boot": {
+      "auto": true,
+      "trigger": "session_start"
+    },
+    "assess": {
+      "auto": true,
+      "trigger": "task_start"
+    },
+    "checkpoint": {
+      "auto": true,
+      "trigger": "interval",
+      "interval": 10
+    },
+    "verify": {
+      "auto": true,
+      "trigger": "after_change"
+    },
+    "reflect": {
+      "auto": true,
+      "trigger": "blocker_detected"
+    },
+    "learn": {
+      "auto": true,
+      "trigger": "unknown_tech_detected"
+    }
+  }
+}

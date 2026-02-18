@@ -1,0 +1,33 @@
+{
+  "name": "OWASP.WTF",
+  "detected": {
+    "frameworks": [],
+    "stateManagement": [],
+    "ui": [],
+    "testing": [],
+    "backend": [],
+    "tools": [],
+    "languages": []
+  },
+  "skills": [],
+  "mcpServers": [
+    "qa-score"
+  ],
+  "permissions": [
+    "Bash(ls:*)",
+    "Bash(cat:*)",
+    "Bash(grep:*)",
+    "Bash(find:*)",
+    "Bash(git status:*)",
+    "Bash(git diff:*)",
+    "Bash(git log:*)",
+    "Bash(git add:*)",
+    "Bash(git commit:*)",
+    "Bash(git push:*)",
+    "Bash(git restore:*)",
+    "Bash(git branch:*)",
+    "Bash(git checkout:*)"
+  ],
+  "devPort": 3000,
+  "devUrl": "http://localhost:3000"
+}

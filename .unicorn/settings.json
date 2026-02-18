@@ -1,0 +1,28 @@
+{
+  "techLevel": "relaxed",
+  "interactionLevel": "only-destructive",
+  "practices": {
+    "zod-validation": "recommended",
+    "error-boundaries": "recommended",
+    "retry-logic": "recommended",
+    "unit-tests": "recommended",
+    "typescript-strict": "recommended",
+    "no-any": "recommended",
+    "jsdoc-exports": "optional",
+    "accessibility-wcag-aa": "optional",
+    "zustand-for-state": "optional",
+    "react-query-for-server": "optional"
+  },
+  "git": {
+    "autoCommit": false,
+    "conventionalCommits": true,
+    "requireQAPassing": false,
+    "createFeatureBranches": true,
+    "branchPrefix": "feat/",
+    "autoPush": false,
+    "protectedBranches": [
+      "main",
+      "master"
+    ]
+  }
+}
