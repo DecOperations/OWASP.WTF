@@ -2,15 +2,43 @@ name: Release CLI
 
 on:
   push:
-    tags:
-      - 'cli-v*'
+    branches: [main]
+    paths:
+      - 'packages/cli/package.json'
 
 permissions:
   contents: write
   packages: write
 
 jobs:
+  check-version:
+    runs-on: ubuntu-latest
+    outputs:
+      changed: ${{ steps.check.outputs.changed }}
+      version: ${{ steps.check.outputs.version }}
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          fetch-depth: 2
+
+      - name: Check if CLI version changed
+        id: check
+        run: |
+          NEW_VERSION=$(grep '"version"' packages/cli/package.json | head -1 | sed 's/.*"version": *"\([^"]*\)".*/\1/')
+          OLD_VERSION=$(git show HEAD~1:packages/cli/package.json 2>/dev/null | grep '"version"' | head -1 | sed 's/.*"version": *"\([^"]*\)".*/\1/' || echo "0.0.0")
+
+          echo "old=$OLD_VERSION new=$NEW_VERSION"
+
+          if [ "$NEW_VERSION" != "$OLD_VERSION" ]; then
+            echo "changed=true" >> "$GITHUB_OUTPUT"
+            echo "version=$NEW_VERSION" >> "$GITHUB_OUTPUT"
+          else
+            echo "changed=false" >> "$GITHUB_OUTPUT"
+          fi
+
   publish:
+    needs: check-version
+    if: needs.check-version.outputs.changed == 'true'
     runs-on: ubuntu-latest
     steps:
       - uses: actions/checkout@v4
@@ -33,13 +61,15 @@ jobs:
         env:
           NODE_AUTH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
 
-      - name: Extract version from tag
-        id: version
-        run: echo "version=${GITHUB_REF_NAME#cli-v}" >> "$GITHUB_OUTPUT"
+      - name: Create git tag
+        run: |
+          VERSION="v${{ needs.check-version.outputs.version }}"
+          git tag "cli-${VERSION}"
+          git push origin "cli-${VERSION}"
 
       - name: Create GitHub Release
         uses: softprops/action-gh-release@v2
         with:
-          name: 'CLI v${{ steps.version.outputs.version }}'
-          tag_name: ${{ github.ref_name }}
+          name: 'CLI v${{ needs.check-version.outputs.version }}'
+          tag_name: 'cli-v${{ needs.check-version.outputs.version }}'
           generate_release_notes: true
