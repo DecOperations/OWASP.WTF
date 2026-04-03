@@ -1,6 +1,6 @@
 {
   "name": "@decoperations/owasp-wtf",
-  "version": "0.1.0",
+  "version": "0.1.1",
   "description": "AI-powered OWASP security auditing CLI",
   "type": "module",
   "publishConfig": {
@@ -25,7 +25,13 @@
     "tsup": "^8.3.6",
     "typescript": "^5.7.3"
   },
-  "keywords": ["owasp", "security", "audit", "cli", "ai"],
+  "keywords": [
+    "owasp",
+    "security",
+    "audit",
+    "cli",
+    "ai"
+  ],
   "license": "MIT",
   "repository": {
     "type": "git",

@@ -50,7 +50,7 @@ const program = new Command();
 program
   .name('owasp-wtf')
   .description('AI-powered OWASP security auditing CLI')
-  .version('0.1.0')
+  .version('0.1.1')
   .argument('[directory]', 'Directory to scan', '.')
   .option('-f, --format <type>', 'Output format: terminal, json, html', 'terminal')
   .option('-o, --output <file>', 'Write report to file')
