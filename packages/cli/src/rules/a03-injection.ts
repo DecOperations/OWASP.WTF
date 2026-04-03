@@ -1,3 +1,4 @@
+// owasp-wtf-ignore-file — this file defines detection rules; string patterns here are not actual vulnerabilities
 import type { Rule, Finding } from '../types.js';
 
 function snippet(lines: string[], idx: number): string {

@@ -1,3 +1,14 @@
+/**
+ * @file analyzer.ts
+ * @description Runs security rules against scanned files, with inline ignore support.
+ * @layer Services
+ *
+ * Supports suppression comments:
+ *   // owasp-wtf-ignore           — ignore the next line
+ *   // owasp-wtf-ignore A03-EVAL  — ignore specific rule on next line
+ *   // owasp-wtf-ignore-file      — ignore entire file
+ */
+
 import type { Rule, Finding, ScanResult, Severity } from './types.js';
 import type { ScannedFile } from './scanner.js';
 
@@ -18,6 +29,59 @@ const SEVERITY_ORDER: Record<Severity, number> = {
 };
 
 /**
+ * Parse ignore directives from file content.
+ * Returns a set of ignored line numbers (1-indexed) and optional rule IDs per line.
+ */
+function parseIgnoreDirectives(content: string): {
+  ignoreFile: boolean;
+  ignoredLines: Map<number, Set<string> | 'all'>;
+} {
+  const ignoredLines = new Map<number, Set<string> | 'all'>();
+  let ignoreFile = false;
+
+  const lines = content.split('\n');
+  for (let i = 0; i < lines.length; i++) {
+    const line = lines[i];
+
+    // owasp-wtf-ignore-file — skip entire file
+    if (/owasp-wtf-ignore-file/.test(line)) {
+      ignoreFile = true;
+      return { ignoreFile, ignoredLines };
+    }
+
+    // owasp-wtf-ignore [RULE-ID, RULE-ID, ...] — ignore next line
+    const ignoreMatch = line.match(/owasp-wtf-ignore(?:\s+(.+))?$/);
+    if (ignoreMatch) {
+      const nextLine = i + 2; // +2 because lines are 1-indexed and we want the NEXT line
+      const ruleIds = ignoreMatch[1]?.trim();
+      if (ruleIds) {
+        const ids = new Set(ruleIds.split(/[,\s]+/).map(id => id.trim()).filter(Boolean));
+        ignoredLines.set(nextLine, ids);
+      } else {
+        ignoredLines.set(nextLine, 'all');
+      }
+    }
+  }
+
+  return { ignoreFile, ignoredLines };
+}
+
+/**
+ * Check if a finding should be suppressed by an ignore directive.
+ */
+function isSuppressed(
+  finding: Finding,
+  directives: { ignoreFile: boolean; ignoredLines: Map<number, Set<string> | 'all'> },
+): boolean {
+  if (directives.ignoreFile) return true;
+
+  const lineDirective = directives.ignoredLines.get(finding.line);
+  if (!lineDirective) return false;
+  if (lineDirective === 'all') return true;
+  return lineDirective.has(finding.ruleId);
+}
+
+/**
  * Run all provided rules against all scanned files and produce a scan result.
  */
 export function analyze(
@@ -26,14 +90,25 @@ export function analyze(
 ): ScanResult {
   const startTime = performance.now();
   const findings: Finding[] = [];
+  let suppressed = 0;
 
   for (const file of files) {
+    const directives = parseIgnoreDirectives(file.content);
+
+    // Skip entire file if owasp-wtf-ignore-file is present
+    if (directives.ignoreFile) continue;
+
     for (const rule of rules) {
       try {
         const results = rule.detect(file.content, file.relativePath);
         for (const finding of results) {
-          // Ensure file path uses relative path for cleaner output
           finding.filePath = file.relativePath;
+
+          if (isSuppressed(finding, directives)) {
+            suppressed++;
+            continue;
+          }
+
           findings.push(finding);
         }
       } catch {
@@ -84,5 +159,6 @@ export function analyze(
     summary,
     categories,
     duration,
+    suppressed,
   };
 }

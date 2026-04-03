@@ -42,4 +42,5 @@ export interface ScanResult {
   summary: Record<Severity, number>;
   categories: Record<string, number>;
   duration: number;
+  suppressed: number;
 }

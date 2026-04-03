@@ -1,3 +1,4 @@
+// owasp-wtf-ignore-file — rule definitions, not actual vulnerabilities
 import type { Rule, Finding } from '../types.js';
 
 /**
