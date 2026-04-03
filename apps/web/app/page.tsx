@@ -528,118 +528,69 @@ function HeroSection() {
                 <span className="text-terminal-cyan">{"\u28BE"}</span> Scanning
                 847 files...
               </p>
-              <div className="mt-4 text-terminal-green">
-                <p>
-                  {"  "}
-                  {"\u2554"}
-                  {"\u2550".repeat(46)}
-                  {"\u2557"}
-                </p>
-                <p>
-                  {"  "}
-                  {"\u2551"}
-                  {"  "}OWASP.WTF Security Report{"                  "}
-                  {"\u2551"}
-                </p>
-                <p>
-                  {"  "}
-                  {"\u2551"}
-                  {"  "}
-                  <span className="text-text-primary font-bold">
-                    Score: 72/100
+              <div className="mt-4 ml-4 text-terminal-green border border-terminal-green/60 rounded-sm">
+                <div className="px-3 py-2 border-b border-terminal-green/60">
+                  <p>OWASP.WTF Security Report</p>
+                  <p>
+                    <span className="text-text-primary font-bold">
+                      Score: 72/100
+                    </span>
+                  </p>
+                </div>
+                <div className="px-3 py-2 border-b border-terminal-green/60 flex flex-wrap gap-x-4 gap-y-1">
+                  <span>
+                    <span className="inline-block w-2 h-2 rounded-full bg-terminal-red mr-1.5 align-middle" />
+                    <span className="text-terminal-red">CRITICAL</span>
+                    {"  "}2
                   </span>
-                  {"                               "}
-                  {"\u2551"}
-                </p>
-                <p>
-                  {"  "}
-                  {"\u2560"}
-                  {"\u2550".repeat(46)}
-                  {"\u2563"}
-                </p>
-                <p>
-                  {"  "}
-                  {"\u2551"}
-                  {"  "}
-                  <span className="text-terminal-red">
-                    {"\uD83D\uDD34"} CRITICAL
+                  <span>
+                    <span className="inline-block w-2 h-2 rounded-full bg-terminal-amber mr-1.5 align-middle" />
+                    <span className="text-terminal-amber">HIGH</span>
+                    {"  "}5
                   </span>
-                  {"  "}2{"  "}
-                  {"\u2502"}
-                  {"  "}
-                  <span className="text-terminal-amber">
-                    {"\uD83D\uDFE0"} HIGH
+                  <span>
+                    <span className="inline-block w-2 h-2 rounded-full bg-yellow-400 mr-1.5 align-middle" />
+                    <span className="text-yellow-400">MEDIUM</span>
+                    {"  "}8
                   </span>
-                  {"    "}5{"           "}
-                  {"\u2551"}
-                </p>
-                <p>
-                  {"  "}
-                  {"\u2551"}
-                  {"  "}
-                  <span className="text-yellow-400">
-                    {"\uD83D\uDFE1"} MEDIUM
+                  <span>
+                    <span className="inline-block w-2 h-2 rounded-full bg-terminal-cyan mr-1.5 align-middle" />
+                    <span className="text-terminal-cyan">LOW</span>
+                    {"  "}12
                   </span>
-                  {"    "}8{"  "}
-                  {"\u2502"}
-                  {"  "}
-                  <span className="text-terminal-cyan">
-                    {"\uD83D\uDD35"} LOW
-                  </span>
-                  {"    "}12{"           "}
-                  {"\u2551"}
-                </p>
-                <p>
-                  {"  "}
-                  {"\u2560"}
-                  {"\u2550".repeat(46)}
-                  {"\u2563"}
-                </p>
-                <p>
-                  {"  "}
-                  {"\u2551"}
-                  {"  "}A03:Injection{"         "}
-                  <span className="text-terminal-red">
-                    {"\u2588".repeat(6)}
-                  </span>
-                  <span className="text-border-subtle">
-                    {"\u2591".repeat(4)}
-                  </span>
-                  {"  "}3 found{"  "}
-                  {"\u2551"}
-                </p>
-                <p>
-                  {"  "}
-                  {"\u2551"}
-                  {"  "}A07:Auth Failures{"     "}
-                  <span className="text-terminal-amber">
-                    {"\u2588".repeat(4)}
-                  </span>
-                  <span className="text-border-subtle">
-                    {"\u2591".repeat(6)}
-                  </span>
-                  {"  "}2 found{"  "}
-                  {"\u2551"}
-                </p>
-                <p>
-                  {"  "}
-                  {"\u2551"}
-                  {"  "}A01:Access Control{"    "}
-                  <span className="text-yellow-400">
-                    {"\u2588".repeat(3)}
-                  </span>
-                  <span className="text-border-subtle">
-                    {"\u2591".repeat(7)}
-                  </span>
-                  {"  "}1 found{"  "}
-                  {"\u2551"}
-                </p>
-                <p>
-                  {"  "}
-                  {"\u2554"}
-                  {"\u2550".repeat(46)}
-                  {"\u255D"}
-                </p>
+                </div>
+                <div className="px-3 py-2 space-y-1">
+                  <p className="flex items-center gap-2">
+                    <span className="w-36 shrink-0">A03:Injection</span>
+                    <span className="text-terminal-red">
+                      {"\u2588".repeat(6)}
+                    </span>
+                    <span className="text-border-subtle">
+                      {"\u2591".repeat(4)}
+                    </span>
+                    <span className="ml-auto">3 found</span>
+                  </p>
+                  <p className="flex items-center gap-2">
+                    <span className="w-36 shrink-0">A07:Auth Failures</span>
+                    <span className="text-terminal-amber">
+                      {"\u2588".repeat(4)}
+                    </span>
+                    <span className="text-border-subtle">
+                      {"\u2591".repeat(6)}
+                    </span>
+                    <span className="ml-auto">2 found</span>
+                  </p>
+                  <p className="flex items-center gap-2">
+                    <span className="w-36 shrink-0">A01:Access Control</span>
+                    <span className="text-yellow-400">
+                      {"\u2588".repeat(3)}
+                    </span>
+                    <span className="text-border-subtle">
+                      {"\u2591".repeat(7)}
+                    </span>
+                    <span className="ml-auto">1 found</span>
+                  </p>
+                </div>
               </div>
               <span className="mt-2 inline-block h-4 w-2 bg-terminal-green animate-terminal-blink" />
             </div>

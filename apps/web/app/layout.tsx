@@ -15,6 +15,7 @@ const jetbrainsMono = JetBrains_Mono({
 });
 
 export const metadata: Metadata = {
+  metadataBase: new URL("https://owasp.wtf"),
   title: "OWASP.WTF - AI-Powered Security Auditing",
   description:
     "Scan any codebase for OWASP vulnerabilities in seconds. AI-powered static analysis that actually understands your code.",
@@ -32,12 +33,15 @@ export const metadata: Metadata = {
       "Scan any codebase for OWASP vulnerabilities in seconds. AI-powered static analysis that actually understands your code.",
     type: "website",
     url: "https://owasp.wtf",
+    siteName: "OWASP.WTF",
   },
   twitter: {
     card: "summary_large_image",
     title: "OWASP.WTF - AI-Powered Security Auditing",
     description:
       "Scan any codebase for OWASP vulnerabilities in seconds. AI-powered static analysis that actually understands your code.",
+    site: "@lambdajeremy",
+    creator: "@lambdajeremy",
   },
 };
 
