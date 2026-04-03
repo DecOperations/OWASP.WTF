@@ -383,7 +383,7 @@ function Navbar() {
 
         <div className="flex items-center gap-4">
           <a
-            href="https://github.com/OWASP/owasp-wtf"
+            href="https://github.com/DecOperations/OWASP.WTF"
             target="_blank"
             rel="noopener noreferrer"
             className="text-text-muted transition-colors hover:text-text-primary"
@@ -480,7 +480,7 @@ function HeroSection() {
               <ArrowRightIcon className="h-4 w-4" />
             </a>
             <a
-              href="https://github.com/OWASP/owasp-wtf"
+              href="https://github.com/DecOperations/OWASP.WTF"
               target="_blank"
               rel="noopener noreferrer"
               className="inline-flex items-center gap-2 rounded-xl border border-border-subtle px-8 py-3.5 font-semibold text-text-primary transition-all hover:border-text-muted hover:bg-white/5"
@@ -1027,7 +1027,7 @@ function GetStartedSection() {
           style={{ animationDelay: "0.2s" }}
         >
           <a
-            href="https://github.com/OWASP/owasp-wtf"
+            href="https://github.com/DecOperations/OWASP.WTF"
             target="_blank"
             rel="noopener noreferrer"
             className="inline-flex items-center gap-2 rounded-xl border border-border-subtle px-6 py-3 font-medium text-text-primary transition-all hover:border-text-muted hover:bg-white/5"
@@ -1037,7 +1037,7 @@ function GetStartedSection() {
             <ExternalLinkIcon className="h-4 w-4 text-text-muted" />
           </a>
           <a
-            href="https://github.com/OWASP/owasp-wtf#readme"
+            href="https://github.com/DecOperations/OWASP.WTF#readme"
             target="_blank"
             rel="noopener noreferrer"
             className="inline-flex items-center gap-2 rounded-xl border border-border-subtle px-6 py-3 font-medium text-text-primary transition-all hover:border-text-muted hover:bg-white/5"
@@ -1081,7 +1081,7 @@ function Footer() {
             <ul className="space-y-3">
               <li>
                 <a
-                  href="https://github.com/OWASP/owasp-wtf"
+                  href="https://github.com/DecOperations/OWASP.WTF"
                   target="_blank"
                   rel="noopener noreferrer"
                   className="text-sm text-text-muted transition-colors hover:text-terminal-green"
@@ -1091,7 +1091,7 @@ function Footer() {
               </li>
               <li>
                 <a
-                  href="https://github.com/OWASP/owasp-wtf#readme"
+                  href="https://github.com/DecOperations/OWASP.WTF#readme"
                   target="_blank"
                   rel="noopener noreferrer"
                   className="text-sm text-text-muted transition-colors hover:text-terminal-green"
@@ -1101,7 +1101,7 @@ function Footer() {
               </li>
               <li>
                 <a
-                  href="https://github.com/OWASP/owasp-wtf/issues"
+                  href="https://github.com/DecOperations/OWASP.WTF/issues"
                   target="_blank"
                   rel="noopener noreferrer"
                   className="text-sm text-text-muted transition-colors hover:text-terminal-green"
@@ -1139,7 +1139,7 @@ function Footer() {
               </li>
               <li>
                 <a
-                  href="https://github.com/OWASP/owasp-wtf/blob/main/CONTRIBUTING.md"
+                  href="https://github.com/DecOperations/OWASP.WTF/blob/main/CONTRIBUTING.md"
                   target="_blank"
                   rel="noopener noreferrer"
                   className="text-sm text-text-muted transition-colors hover:text-terminal-green"
@@ -1159,7 +1159,7 @@ function Footer() {
           </p>
           <div className="flex items-center gap-4">
             <a
-              href="https://github.com/OWASP/owasp-wtf"
+              href="https://github.com/DecOperations/OWASP.WTF"
               target="_blank"
               rel="noopener noreferrer"
               className="text-text-muted transition-colors hover:text-text-primary"

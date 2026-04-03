@@ -1,8 +1,11 @@
 {
-  "name": "owasp-wtf",
+  "name": "@decoperations/owasp-wtf",
   "version": "0.1.0",
   "description": "AI-powered OWASP security auditing CLI",
   "type": "module",
+  "publishConfig": {
+    "registry": "https://npm.pkg.github.com"
+  },
   "bin": {
     "owasp-wtf": "./dist/index.js"
   },
@@ -23,5 +26,14 @@
     "typescript": "^5.7.3"
   },
   "keywords": ["owasp", "security", "audit", "cli", "ai"],
-  "license": "MIT"
+  "license": "MIT",
+  "repository": {
+    "type": "git",
+    "url": "https://github.com/DecOperations/OWASP.WTF.git",
+    "directory": "packages/cli"
+  },
+  "bugs": {
+    "url": "https://github.com/DecOperations/OWASP.WTF/issues"
+  },
+  "homepage": "https://github.com/DecOperations/OWASP.WTF#readme"
 }
