@@ -35,3 +35,7 @@ coverage/
 # Debug
 npm-debug.log*
 pnpm-debug.log*
+
+# UnicornDev generated
+.unicorn/
+.claude/.unicorn-version
