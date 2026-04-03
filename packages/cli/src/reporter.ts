@@ -65,7 +65,7 @@ export function formatTerminal(result: ScanResult): string {
     chalk.bold('  Security Score: ') + scoreStr,
     '',
     `  Files scanned:  ${chalk.bold(String(result.filesScanned))}`,
-    `  Findings:       ${chalk.bold(String(result.findings.length))}`,
+    `  Findings:       ${chalk.bold(String(result.findings.length))}` + (result.suppressed ? chalk.dim(` (${result.suppressed} suppressed)`) : ''),
     `  Scan time:      ${chalk.bold((result.duration / 1000).toFixed(2) + 's')}`,
     '',
     `  ${severityColor.critical('CRITICAL')} ${chalk.bold(String(result.summary.critical))}  ${severityColor.high('HIGH')} ${chalk.bold(String(result.summary.high))}  ${severityColor.medium('MEDIUM')} ${chalk.bold(String(result.summary.medium))}  ${severityColor.low('LOW')} ${chalk.bold(String(result.summary.low))}`,
@@ -164,7 +164,7 @@ function groupByFile(findings: Finding[]): Record<string, Finding[]> {
 // JSON format
 // ───────────────────────────────────────────────────────────────────────────
 
-export function formatJson(result: ScanResult): string {
+export function formatJson(result: ScanResult, aiAnalysis?: { insights: unknown[]; overallSummary: string; riskAssessment: string }): string {
   return JSON.stringify(
     {
       version: '0.1.0',
@@ -187,6 +187,7 @@ export function formatJson(result: ScanResult): string {
         suggestion: f.suggestion,
         snippet: f.snippet,
       })),
+      ...(aiAnalysis && { ai: aiAnalysis }),
     },
     null,
     2,
