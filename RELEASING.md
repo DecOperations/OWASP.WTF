@@ -21,8 +21,8 @@ PR merged to main
 semantic-release decides: patch / minor / major / no-release
    │
    ├─► updates packages/cli/package.json version
-   ├─► generates CHANGELOG.md
-   ├─► creates git tag vX.Y.Z
+   ├─► generates CHANGELOG.md (at repo root)
+   ├─► creates git tag cli-vX.Y.Z
    ├─► creates GitHub Release with notes
    └─► triggers publish job to GitHub Packages
                        │
@@ -32,19 +32,29 @@ semantic-release decides: patch / minor / major / no-release
 
 ## Conventional Commits → version bump
 
+While the project is in `0.x` we use a conservative bump policy: `feat:` is
+intermediate progress (patch), `milestone:` graduates a roadmap milestone
+(minor), and breaking changes never escalate to major until we deliberately
+cut `1.0.0`.
+
 | Commit prefix              | Result (0.x)    | Result (post-1.0) |
 | -------------------------- | --------------- | ----------------- |
+| `milestone:`               | **minor**       | minor             |
+| `feat:`                    | **patch**       | minor             |
 | `fix:`                     | patch           | patch             |
 | `perf:` `refactor:`        | patch           | patch             |
 | `security:`                | patch           | patch             |
 | `build:` `revert:`         | patch           | patch             |
-| `feat:`                    | minor           | minor             |
 | `BREAKING CHANGE:` or `!`  | **minor**       | major             |
 | `docs:` `test:` `ci:` `chore:` | **no release** | **no release** |
 
-While the project is in `0.x` we use a graduation guard: breaking changes only
-bump the minor (`0.1.x` → `0.2.0`), never the major. The major stays at `0` until
-we deliberately cut `1.0.0` (manually bump the version + drop the
+**Why `feat:` is patch in 0.x:** sub-features that move toward a milestone
+should not bump the minor on every commit. Only when a roadmap milestone is
+*completed* — typically the last commit closing it out — do we use
+`milestone:` to claim the minor bump.
+
+**Graduation guard:** the major stays at `0` until we deliberately cut
+`1.0.0` (manually bump the version + drop the
 `{ "breaking": true, "release": "minor" }` rule from `.releaserc.json`).
 1.0.0 means the CLI surface, config schema, JSON output, SARIF output, exit
 codes, and plugin interface are stable.
@@ -52,13 +62,28 @@ codes, and plugin interface are stable.
 Examples:
 
 ```
-fix(cli): handle missing package.json
-feat(scanner): add SARIF output
-security(report): redact secrets in HTML output
-feat(api)!: change scan output schema
+fix(cli): handle missing package.json                    # → patch
+feat(scanner): wire up basic SARIF emit                  # → patch (in-flight)
+feat(scanner): add severity filter                       # → patch (in-flight)
+milestone(scanner): SARIF output GA                      # → minor (closes a milestone)
+security(report): redact secrets in HTML output          # → patch
+feat(api)!: change scan output schema                    # → minor (breaking, 0.x guard)
 
 BREAKING CHANGE: scan output now uses findings[] instead of vulnerabilities[]
 ```
+
+## Path-scoped releases
+
+semantic-release runs from `packages/cli/` and uses
+[`semantic-release-monorepo`](https://github.com/pmowrer/semantic-release-monorepo)
+to **filter commits to those that touched `packages/cli/**`**. Commits that only
+modify `apps/web/**`, `docs/**`, `ROADMAP.md`, or other paths outside the CLI
+do not trigger a CLI release.
+
+In practice: a `docs(web): redesign roadmap page` commit, even though it
+contains the word `docs:`, would not bump the CLI version *even if it had been
+`feat:`*, because none of the changed files live under `packages/cli/`. This
+makes the CLI version track CLI behavior, not site updates.
 
 ## Branches
 
