@@ -8,6 +8,7 @@ import { runInstallToolsCommand } from './commands/install-tools.js';
 import { runSetup } from './config.js';
 import type { Severity } from './core/types.js';
 import type { ScanMode } from './adapters/index.js';
+import { VERSION, VERSION_STRING } from './version.js';
 
 // OWASP = ? · WTF = ?
 const TAGLINES: [string, string][] = [
@@ -37,7 +38,7 @@ function getBanner(): string {
   ${chalk.red('██    ██')} ${chalk.red('██')} ${chalk.red('███')} ${chalk.red('██')} ${chalk.yellow('██   ██')}      ${chalk.yellow('██')} ${chalk.green('██')}         ${chalk.blue('██')} ${chalk.blue('███')} ${chalk.blue('██')}    ${chalk.magenta('██')}    ${chalk.magenta('██')}
    ${chalk.red('██████')}   ${chalk.red('███')} ${chalk.red('███')}  ${chalk.yellow('██   ██')} ${chalk.yellow('███████')} ${chalk.green('██')}          ${chalk.blue('███')} ${chalk.blue('███')}     ${chalk.magenta('██')}    ${chalk.magenta('██')}
   ${chalk.dim(owasp)} ${chalk.dim('·')} ${chalk.dim(wtf)}
-  ${chalk.dim('v2.0.0 · meta-scanner')}
+  ${chalk.dim(`v${VERSION} · meta-scanner`)}
 `;
 }
 
@@ -55,7 +56,7 @@ const program = new Command();
 program
   .name('owasp-wtf')
   .description('AppSec orchestrator: best OSS scanners, one OWASP Top 10 report, agent-ready fixes.')
-  .version('2.0.0');
+  .version(VERSION_STRING);
 
 interface ScanOpts {
   format?: string;

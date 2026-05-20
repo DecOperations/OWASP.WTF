@@ -1,6 +1,6 @@
 {
   "name": "@decoperations/owasp-wtf",
-  "version": "0.1.1",
+  "version": "1.0.0",
   "description": "AI-powered OWASP security auditing CLI",
   "type": "module",
   "publishConfig": {
@@ -10,9 +10,11 @@
     "owasp-wtf": "./dist/index.js"
   },
   "scripts": {
-    "build": "tsup src/index.ts --format esm --dts --clean",
-    "dev": "tsup src/index.ts --format esm --watch",
-    "lint": "tsc --noEmit"
+    "build": "tsup",
+    "dev": "tsup --watch",
+    "lint": "tsc --noEmit",
+    "typecheck": "tsc --noEmit",
+    "test": "echo \"no tests yet\" && exit 0"
   },
   "dependencies": {
     "chalk": "^5.4.1",

@@ -1,0 +1,113 @@
+name: Release
+
+on:
+  push:
+    branches: [main, beta, alpha]
+  workflow_dispatch:
+
+concurrency:
+  group: release-${{ github.ref }}
+  cancel-in-progress: false
+
+permissions:
+  contents: write
+  issues: write
+  pull-requests: write
+  packages: write
+  id-token: write
+
+jobs:
+  release:
+    name: Semantic Release
+    runs-on: ubuntu-latest
+    outputs:
+      new_release_published: ${{ steps.semrel.outputs.new_release_published }}
+      new_release_version: ${{ steps.semrel.outputs.new_release_version }}
+      new_release_git_tag: ${{ steps.semrel.outputs.new_release_git_tag }}
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          fetch-depth: 0
+          persist-credentials: true
+          token: ${{ secrets.GITHUB_TOKEN }}
+
+      - uses: pnpm/action-setup@v4
+      - uses: actions/setup-node@v4
+        with:
+          node-version: '22'
+          cache: 'pnpm'
+          registry-url: 'https://npm.pkg.github.com'
+          scope: '@decoperations'
+
+      - run: pnpm install --frozen-lockfile
+
+      - name: Lint
+        run: pnpm lint
+      - name: Typecheck
+        run: pnpm typecheck
+      - name: Test
+        run: pnpm test
+      - name: Build
+        run: pnpm build
+
+      - name: Semantic Release
+        id: semrel
+        env:
+          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+        run: |
+          # Run semantic-release; capture whether it published a new version.
+          if pnpm exec semantic-release; then
+            if [ -f packages/cli/package.json ]; then
+              VERSION=$(node -p "require('./packages/cli/package.json').version")
+              echo "new_release_published=true" >> "$GITHUB_OUTPUT"
+              echo "new_release_version=$VERSION" >> "$GITHUB_OUTPUT"
+              echo "new_release_git_tag=v$VERSION" >> "$GITHUB_OUTPUT"
+            fi
+          else
+            echo "new_release_published=false" >> "$GITHUB_OUTPUT"
+            exit 1
+          fi
+
+  publish:
+    name: Publish CLI to GitHub Packages
+    needs: release
+    if: needs.release.outputs.new_release_published == 'true'
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          ref: ${{ needs.release.outputs.new_release_git_tag }}
+          fetch-depth: 0
+
+      - uses: pnpm/action-setup@v4
+      - uses: actions/setup-node@v4
+        with:
+          node-version: '22'
+          cache: 'pnpm'
+          registry-url: 'https://npm.pkg.github.com'
+          scope: '@decoperations'
+
+      - run: pnpm install --frozen-lockfile
+
+      - name: Build CLI with release metadata
+        env:
+          RELEASE_VERSION: ${{ needs.release.outputs.new_release_version }}
+          RELEASE_COMMIT: ${{ github.sha }}
+          RELEASE_BUILD_DATE: ${{ github.event.repository.updated_at }}
+        run: pnpm build --filter @decoperations/owasp-wtf
+
+      - name: Publish to GitHub Packages
+        env:
+          NODE_AUTH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+        run: pnpm --filter @decoperations/owasp-wtf publish --no-git-checks --access public
+
+      - name: Smoke test installed package
+        env:
+          NODE_AUTH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+        run: |
+          mkdir -p /tmp/smoke && cd /tmp/smoke
+          echo "@decoperations:registry=https://npm.pkg.github.com" > .npmrc
+          echo "//npm.pkg.github.com/:_authToken=${NODE_AUTH_TOKEN}" >> .npmrc
+          npm init -y >/dev/null
+          npm install @decoperations/owasp-wtf@${{ needs.release.outputs.new_release_version }}
+          npx owasp-wtf --version
