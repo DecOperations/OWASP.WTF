@@ -69,12 +69,34 @@ interface ScanOpts {
   banner?: boolean;
 }
 
-function attachScanOptions(cmd: Command): Command {
+interface ScanOptionDefaults {
+  format?: OutputFormat;
+  output?: string;
+  failOn?: Severity;
+}
+
+function attachScanOptions(cmd: Command, defaults: ScanOptionDefaults = {}): Command {
+  const format = cmd.createOption(
+    '-f, --format <type>',
+    'Output format: terminal, json, sarif, markdown, html, fix-plan',
+  );
+  if (defaults.format) format.default(defaults.format);
+  else format.default('terminal');
+
+  const output = cmd.createOption('-o, --output <file>', 'Write report to file instead of stdout');
+  if (defaults.output) output.default(defaults.output);
+
+  const failOn = cmd.createOption(
+    '--fail-on <severity>',
+    'Exit non-zero if any finding ≥ severity: critical, high, medium, low',
+  );
+  if (defaults.failOn) failOn.default(defaults.failOn);
+
   return cmd
-    .option('-f, --format <type>', 'Output format: terminal, json, sarif, markdown, html, fix-plan', 'terminal')
-    .option('-o, --output <file>', 'Write report to file instead of stdout')
+    .addOption(format)
+    .addOption(output)
     .option('-i, --ignore <patterns>', 'Comma-separated ignore globs', '')
-    .option('--fail-on <severity>', 'Exit non-zero if any finding ≥ severity: critical, high, medium, low')
+    .addOption(failOn)
     .option('--agent <agent>', 'For --format=fix-plan: claude, cursor, codex, copilot, generic', 'generic')
     .option('--show-all', 'Show all findings in terminal output (default: top 15)')
     .option('--verbose', 'Verbose output')
@@ -125,25 +147,19 @@ attachScanOptions(
 attachScanOptions(
   program.command('ci')
     .description('CI mode: standard scan, SARIF output by default, fail-on high')
-    .argument('[directory]', 'Directory to scan', '.')
-).action((directory: string, opts: ScanOpts) => dispatch('scan', directory, {
-  ...opts,
-  format: opts.format ?? 'sarif',
-  output: opts.output ?? 'owasp-wtf.sarif',
-  failOn: opts.failOn ?? 'high',
-  banner: false,
-}));
+    .argument('[directory]', 'Directory to scan', '.'),
+  { format: 'sarif', output: 'owasp-wtf.sarif', failOn: 'high' as Severity },
+).action((directory: string, opts: ScanOpts) =>
+  dispatch('scan', directory, { ...opts, banner: false }),
+);
 
 // ─── fix-plan ──────────────────────────────────────────────────────────────
 attachScanOptions(
   program.command('fix-plan')
     .description('Run standard scan and emit SECURITY_FIX_PLAN.md for coding agents')
-    .argument('[directory]', 'Directory to scan', '.')
-).action((directory: string, opts: ScanOpts) => dispatch('scan', directory, {
-  ...opts,
-  format: 'fix-plan',
-  output: opts.output ?? 'SECURITY_FIX_PLAN.md',
-}));
+    .argument('[directory]', 'Directory to scan', '.'),
+  { format: 'fix-plan', output: 'SECURITY_FIX_PLAN.md' },
+).action((directory: string, opts: ScanOpts) => dispatch('scan', directory, opts));
 
 // ─── doctor ────────────────────────────────────────────────────────────────
 program.command('doctor')

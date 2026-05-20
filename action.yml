@@ -1,5 +1,5 @@
 name: 'OWASP.WTF Security Scan'
-description: 'Run an AI-powered OWASP security scan on your repository using the OWASP.WTF CLI.'
+description: 'Run an OWASP Top 10 oriented AppSec scan on your repository using the OWASP.WTF meta-scanner CLI.'
 author: 'DecOperations'
 branding:
   icon: 'shield'
@@ -10,30 +10,34 @@ inputs:
     description: 'Directory to scan'
     required: false
     default: '.'
-  severity:
-    description: 'Minimum severity to report (critical, high, medium, low, info)'
+  mode:
+    description: 'Scan mode: quick | scan | deep'
     required: false
-    default: 'low'
+    default: 'scan'
   format:
-    description: 'Output format (terminal, json, html)'
+    description: 'Output format: terminal | json | sarif | markdown | html | fix-plan'
     required: false
-    default: 'json'
+    default: 'sarif'
   output:
     description: 'Path to write the scan report'
     required: false
-    default: 'owasp-wtf-report.json'
+    default: 'owasp-wtf.sarif'
   ignore:
-    description: 'Comma-separated ignore patterns'
+    description: 'Comma-separated ignore globs'
     required: false
     default: ''
-  ai:
-    description: 'Enable AI-assisted analysis (requires provider config / env)'
+  fail-on:
+    description: 'Fail the workflow if any finding has severity >= this (critical | high | medium | low). Empty = never fail.'
     required: false
-    default: 'false'
-  fail-on-findings:
-    description: 'Fail the workflow if findings at or above --severity are reported'
+    default: 'high'
+  install-tools:
+    description: 'Comma-separated list of OSS scanners to install before running. Supported: semgrep,gitleaks,trivy,syft,grype,hadolint. Empty = skip and let the CLI degrade gracefully.'
     required: false
-    default: 'false'
+    default: 'semgrep,gitleaks,trivy'
+  agent:
+    description: 'For format=fix-plan: claude | cursor | codex | copilot | generic'
+    required: false
+    default: 'generic'
   version:
     description: 'CLI version to install (defaults to latest published)'
     required: false
@@ -46,6 +50,10 @@ inputs:
     description: 'Name for the uploaded artifact'
     required: false
     default: 'owasp-wtf-report'
+  upload-sarif:
+    description: 'Upload SARIF to GitHub code scanning (requires security-events: write). Auto-enabled when format=sarif.'
+    required: false
+    default: 'auto'
   node-version:
     description: 'Node.js version used to run the CLI'
     required: false
@@ -60,8 +68,11 @@ outputs:
     description: 'Path to the generated report file'
     value: ${{ steps.scan.outputs.report-path }}
   findings:
-    description: 'Total number of findings reported (when format=json)'
+    description: 'Total number of findings reported (when format=json or sarif)'
     value: ${{ steps.scan.outputs.findings }}
+  score:
+    description: 'Risk score 0-100 (when format=json)'
+    value: ${{ steps.scan.outputs.score }}
 
 runs:
   using: 'composite'
@@ -80,43 +91,115 @@ runs:
       run: |
         npm install -g "@decoperations/owasp-wtf@${{ inputs.version }}"
 
+    - name: Install OSS scanners
+      shell: bash
+      if: ${{ inputs.install-tools != '' }}
+      env:
+        TOOLS: ${{ inputs.install-tools }}
+      run: |
+        set -euo pipefail
+        IFS=',' read -ra REQUESTED <<< "$TOOLS"
+        for raw in "${REQUESTED[@]}"; do
+          tool="$(echo "$raw" | tr -d '[:space:]')"
+          [ -z "$tool" ] && continue
+          echo "::group::Install $tool"
+          case "$tool" in
+            semgrep)
+              python3 -m pip install --user semgrep
+              echo "$HOME/.local/bin" >> "$GITHUB_PATH"
+              ;;
+            gitleaks)
+              curl -sSfL https://raw.githubusercontent.com/gitleaks/gitleaks/master/scripts/install.sh \
+                | sh -s -- -b /usr/local/bin
+              ;;
+            trivy)
+              curl -sSfL https://raw.githubusercontent.com/aquasecurity/trivy/main/contrib/install.sh \
+                | sh -s -- -b /usr/local/bin
+              ;;
+            syft)
+              curl -sSfL https://raw.githubusercontent.com/anchore/syft/main/install.sh \
+                | sh -s -- -b /usr/local/bin
+              ;;
+            grype)
+              curl -sSfL https://raw.githubusercontent.com/anchore/grype/main/install.sh \
+                | sh -s -- -b /usr/local/bin
+              ;;
+            hadolint)
+              sudo curl -sSfL -o /usr/local/bin/hadolint \
+                https://github.com/hadolint/hadolint/releases/latest/download/hadolint-Linux-x86_64
+              sudo chmod +x /usr/local/bin/hadolint
+              ;;
+            *)
+              echo "::warning::Unknown tool '$tool' — skipping. Supported: semgrep, gitleaks, trivy, syft, grype, hadolint."
+              ;;
+          esac
+          echo "::endgroup::"
+        done
+
+    - name: Doctor — show installed scanners
+      shell: bash
+      run: owasp-wtf doctor || true
+
     - name: Run OWASP.WTF scan
       id: scan
       shell: bash
+      env:
+        MODE: ${{ inputs.mode }}
+        DIRECTORY: ${{ inputs.directory }}
+        FORMAT: ${{ inputs.format }}
+        OUTPUT: ${{ inputs.output }}
+        IGNORE: ${{ inputs.ignore }}
+        FAIL_ON: ${{ inputs.fail-on }}
+        AGENT: ${{ inputs.agent }}
       run: |
         set -o pipefail
         args=(
-          "${{ inputs.directory }}"
-          --severity "${{ inputs.severity }}"
-          --format   "${{ inputs.format }}"
-          --output   "${{ inputs.output }}"
+          "$MODE"
+          "$DIRECTORY"
+          --no-banner
+          --format "$FORMAT"
+          --output "$OUTPUT"
         )
-        if [ -n "${{ inputs.ignore }}" ]; then
-          args+=(--ignore "${{ inputs.ignore }}")
+        if [ -n "$IGNORE" ]; then
+          args+=(--ignore "$IGNORE")
         fi
-        if [ "${{ inputs.ai }}" = "true" ]; then
-          args+=(--ai)
+        if [ -n "$FAIL_ON" ]; then
+          args+=(--fail-on "$FAIL_ON")
+        fi
+        if [ "$FORMAT" = "fix-plan" ]; then
+          args+=(--agent "$AGENT")
         fi
 
         echo "::group::owasp-wtf ${args[*]}"
+        scan_exit=0
         owasp-wtf "${args[@]}" || scan_exit=$?
         echo "::endgroup::"
 
-        echo "report-path=${{ inputs.output }}" >> "$GITHUB_OUTPUT"
+        echo "report-path=$OUTPUT" >> "$GITHUB_OUTPUT"
 
+        # Extract finding count + score from JSON / SARIF when available.
         findings=""
-        if [ "${{ inputs.format }}" = "json" ] && [ -f "${{ inputs.output }}" ]; then
-          findings=$(node -e "try{const r=JSON.parse(require('fs').readFileSync('${{ inputs.output }}','utf8'));const n=Array.isArray(r)?r.length:(r.findings?r.findings.length:(r.summary&&typeof r.summary.total==='number'?r.summary.total:''));process.stdout.write(String(n??''))}catch(e){process.stdout.write('')}")
-          echo "findings=$findings" >> "$GITHUB_OUTPUT"
-          echo "Findings: ${findings:-unknown}"
+        score=""
+        if [ -f "$OUTPUT" ]; then
+          if [ "$FORMAT" = "json" ]; then
+            findings=$(node -e "try{const r=JSON.parse(require('fs').readFileSync(process.argv[1],'utf8'));process.stdout.write(String((r.findings||[]).length))}catch(e){process.stdout.write('')}" "$OUTPUT")
+            score=$(node -e "try{const r=JSON.parse(require('fs').readFileSync(process.argv[1],'utf8'));process.stdout.write(String(r.score??''))}catch(e){process.stdout.write('')}" "$OUTPUT")
+          elif [ "$FORMAT" = "sarif" ]; then
+            findings=$(node -e "try{const r=JSON.parse(require('fs').readFileSync(process.argv[1],'utf8'));const n=(r.runs||[]).reduce((a,run)=>a+(run.results||[]).length,0);process.stdout.write(String(n))}catch(e){process.stdout.write('')}" "$OUTPUT")
+          fi
         fi
+        echo "findings=$findings" >> "$GITHUB_OUTPUT"
+        echo "score=$score" >> "$GITHUB_OUTPUT"
+        echo "Findings: ${findings:-unknown}  Score: ${score:-n/a}"
 
-        if [ "${{ inputs.fail-on-findings }}" = "true" ] && [ -n "$findings" ] && [ "$findings" != "0" ]; then
-          echo "::error::OWASP.WTF reported $findings finding(s) at severity '${{ inputs.severity }}' or higher."
-          exit 1
-        fi
+        exit "$scan_exit"
 
-        exit ${scan_exit:-0}
+    - name: Upload SARIF to GitHub code scanning
+      if: ${{ always() && (inputs.upload-sarif == 'true' || (inputs.upload-sarif == 'auto' && inputs.format == 'sarif')) && hashFiles(inputs.output) != '' }}
+      uses: github/codeql-action/upload-sarif@v3
+      with:
+        sarif_file: ${{ inputs.output }}
+        category: owasp-wtf
 
     - name: Upload scan report
       if: ${{ always() && inputs.upload-artifact == 'true' && hashFiles(inputs.output) != '' }}
