@@ -1,5 +1,6 @@
 import { readFileSync, existsSync } from "node:fs";
-import { resolve } from "node:path";
+import { dirname, resolve } from "node:path";
+import { fileURLToPath } from "node:url";
 
 export type ChangelogSectionKind =
   | "features"
@@ -195,7 +196,13 @@ export function parseChangelog(markdown: string): ChangelogRelease[] {
 }
 
 export function loadChangelog(): ChangelogRelease[] {
+  // Resolve relative to this file (lib/.generated/CHANGELOG.md is written by
+  // scripts/snapshot-content.mjs at build time). Fall back to repo-root
+  // lookups so local pnpm dev still works if the snapshot is stale.
+  const here = dirname(fileURLToPath(import.meta.url));
   const candidates = [
+    resolve(here, ".generated/CHANGELOG.md"),
+    resolve(here, "../lib/.generated/CHANGELOG.md"),
     resolve(process.cwd(), "CHANGELOG.md"),
     resolve(process.cwd(), "../../CHANGELOG.md"),
     resolve(process.cwd(), "../CHANGELOG.md"),
