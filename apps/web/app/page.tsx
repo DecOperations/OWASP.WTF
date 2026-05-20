@@ -379,6 +379,12 @@ function Navbar() {
           >
             AI Engine
           </a>
+          <a
+            href="/docs"
+            className="text-sm text-text-muted transition-colors hover:text-terminal-green"
+          >
+            Docs
+          </a>
         </div>
 
         <div className="flex items-center gap-4">
@@ -988,13 +994,11 @@ function GetStartedSection() {
             <ExternalLinkIcon className="h-4 w-4 text-text-muted" />
           </a>
           <a
-            href="https://github.com/DecOperations/OWASP.WTF#readme"
-            target="_blank"
-            rel="noopener noreferrer"
+            href="/docs"
             className="inline-flex items-center gap-2 rounded-xl border border-border-subtle px-6 py-3 font-medium text-text-primary transition-all hover:border-text-muted hover:bg-white/5"
           >
             Read the Docs
-            <ExternalLinkIcon className="h-4 w-4 text-text-muted" />
+            <ArrowRightIcon className="h-4 w-4 text-text-muted" />
           </a>
         </div>
       </div>
@@ -1042,9 +1046,7 @@ function Footer() {
               </li>
               <li>
                 <a
-                  href="https://github.com/DecOperations/OWASP.WTF#readme"
-                  target="_blank"
-                  rel="noopener noreferrer"
+                  href="/docs"
                   className="text-sm text-text-muted transition-colors hover:text-terminal-green"
                 >
                   Documentation
