@@ -385,6 +385,18 @@ function Navbar() {
           >
             Docs
           </a>
+          <a
+            href="/changelog"
+            className="text-sm text-text-muted transition-colors hover:text-terminal-green"
+          >
+            Changelog
+          </a>
+          <a
+            href="/roadmap"
+            className="text-sm text-text-muted transition-colors hover:text-terminal-green"
+          >
+            Roadmap
+          </a>
         </div>
 
         <div className="flex items-center gap-4">
@@ -1050,6 +1062,22 @@ function Footer() {
                   className="text-sm text-text-muted transition-colors hover:text-terminal-green"
                 >
                   Documentation
+                </a>
+              </li>
+              <li>
+                <a
+                  href="/changelog"
+                  className="text-sm text-text-muted transition-colors hover:text-terminal-green"
+                >
+                  Changelog
+                </a>
+              </li>
+              <li>
+                <a
+                  href="/roadmap"
+                  className="text-sm text-text-muted transition-colors hover:text-terminal-green"
+                >
+                  Roadmap
                 </a>
               </li>
               <li>

@@ -89,6 +89,18 @@ function Navbar() {
           >
             Docs
           </Link>
+          <Link
+            href="/changelog"
+            className="text-sm text-text-muted transition-colors hover:text-terminal-green"
+          >
+            Changelog
+          </Link>
+          <Link
+            href="/roadmap"
+            className="text-sm text-text-muted transition-colors hover:text-terminal-green"
+          >
+            Roadmap
+          </Link>
           <a
             href={REPO}
             target="_blank"
