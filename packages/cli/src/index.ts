@@ -12,6 +12,7 @@ import { formatTerminal, formatJson, formatHtml } from './reporter.js';
 import { loadConfig, runSetup, getResolvedAiConfig } from './config.js';
 import { analyzeWithAi } from './ai.js';
 import type { AiAnalysisResult } from './ai.js';
+import { VERSION_STRING } from './version.js';
 
 // OWASP = ? · WTF = ?
 const TAGLINES: [string, string][] = [
@@ -50,7 +51,7 @@ const program = new Command();
 program
   .name('owasp-wtf')
   .description('AI-powered OWASP security auditing CLI')
-  .version('0.1.1')
+  .version(VERSION_STRING)
   .argument('[directory]', 'Directory to scan', '.')
   .option('-f, --format <type>', 'Output format: terminal, json, html', 'terminal')
   .option('-o, --output <file>', 'Write report to file')
