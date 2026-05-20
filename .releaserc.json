@@ -4,13 +4,14 @@
     { "name": "beta", "prerelease": true },
     { "name": "alpha", "prerelease": true }
   ],
-  "tagFormat": "v${version}",
+  "tagFormat": "cli-v${version}",
   "plugins": [
     [
       "@semantic-release/commit-analyzer",
       {
         "preset": "conventionalcommits",
         "releaseRules": [
+          { "breaking": true, "release": "minor" },
           { "type": "security", "release": "patch" },
           { "type": "perf", "release": "patch" },
           { "type": "refactor", "release": "patch" },

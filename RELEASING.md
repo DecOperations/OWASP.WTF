@@ -32,15 +32,22 @@ semantic-release decides: patch / minor / major / no-release
 
 ## Conventional Commits → version bump
 
-| Commit prefix              | Result          |
-| -------------------------- | --------------- |
-| `fix:`                     | patch           |
-| `perf:` `refactor:`        | patch           |
-| `security:`                | patch           |
-| `build:` `revert:`         | patch           |
-| `feat:`                    | minor           |
-| `BREAKING CHANGE:` or `!`  | major           |
-| `docs:` `test:` `ci:` `chore:` | **no release** |
+| Commit prefix              | Result (0.x)    | Result (post-1.0) |
+| -------------------------- | --------------- | ----------------- |
+| `fix:`                     | patch           | patch             |
+| `perf:` `refactor:`        | patch           | patch             |
+| `security:`                | patch           | patch             |
+| `build:` `revert:`         | patch           | patch             |
+| `feat:`                    | minor           | minor             |
+| `BREAKING CHANGE:` or `!`  | **minor**       | major             |
+| `docs:` `test:` `ci:` `chore:` | **no release** | **no release** |
+
+While the project is in `0.x` we use a graduation guard: breaking changes only
+bump the minor (`0.1.x` → `0.2.0`), never the major. The major stays at `0` until
+we deliberately cut `1.0.0` (manually bump the version + drop the
+`{ "breaking": true, "release": "minor" }` rule from `.releaserc.json`).
+1.0.0 means the CLI surface, config schema, JSON output, SARIF output, exit
+codes, and plugin interface are stable.
 
 Examples:
 
@@ -71,6 +78,13 @@ pnpm install   # installs husky via the `prepare` script
 
 Bypass only in emergencies with `git commit --no-verify`. CI will still reject
 invalid commit messages on PRs.
+
+## Tag format
+
+semantic-release is configured with `tagFormat: cli-v${version}` to match the
+historical tag scheme (`cli-v0.1.0`, `cli-v0.1.1`). Do not introduce `v${version}`
+tags; semantic-release will not find them and may compute a brash first-release
+jump to `1.0.0` from history.
 
 ## Manual escape hatch
 
