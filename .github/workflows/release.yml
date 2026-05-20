@@ -50,18 +50,24 @@ jobs:
       - name: Build
         run: pnpm build
 
-      - name: Semantic Release
+      - name: Semantic Release (CLI)
         id: semrel
+        working-directory: packages/cli
         env:
           GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
         run: |
-          # Run semantic-release; capture whether it published a new version.
+          # Run semantic-release from packages/cli. semantic-release-monorepo
+          # filters commits to those touching this directory, so web/docs/
+          # roadmap-only changes do not bump the CLI version.
+          BEFORE_VERSION=$(node -p "require('./package.json').version")
           if pnpm exec semantic-release; then
-            if [ -f packages/cli/package.json ]; then
-              VERSION=$(node -p "require('./packages/cli/package.json').version")
+            AFTER_VERSION=$(node -p "require('./package.json').version")
+            if [ "$BEFORE_VERSION" != "$AFTER_VERSION" ]; then
               echo "new_release_published=true" >> "$GITHUB_OUTPUT"
-              echo "new_release_version=$VERSION" >> "$GITHUB_OUTPUT"
-              echo "new_release_git_tag=v$VERSION" >> "$GITHUB_OUTPUT"
+              echo "new_release_version=$AFTER_VERSION" >> "$GITHUB_OUTPUT"
+              echo "new_release_git_tag=cli-v$AFTER_VERSION" >> "$GITHUB_OUTPUT"
+            else
+              echo "new_release_published=false" >> "$GITHUB_OUTPUT"
             fi
           else
             echo "new_release_published=false" >> "$GITHUB_OUTPUT"
