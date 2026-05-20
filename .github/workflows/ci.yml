@@ -57,7 +57,7 @@ jobs:
         run: pnpm build
 
       - name: Self-scan
-        run: node packages/cli/dist/index.js . --severity high --format json --output scan-results.json
+        run: node packages/cli/dist/index.js scan . --no-banner --fail-on high --format json --output scan-results.json
         continue-on-error: true
 
       - name: Upload scan results
