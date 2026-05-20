@@ -1,0 +1,126 @@
+name: 'OWASP.WTF Security Scan'
+description: 'Run an AI-powered OWASP security scan on your repository using the OWASP.WTF CLI.'
+author: 'DecOperations'
+branding:
+  icon: 'shield'
+  color: 'red'
+
+inputs:
+  directory:
+    description: 'Directory to scan'
+    required: false
+    default: '.'
+  severity:
+    description: 'Minimum severity to report (critical, high, medium, low, info)'
+    required: false
+    default: 'low'
+  format:
+    description: 'Output format (terminal, json, html)'
+    required: false
+    default: 'json'
+  output:
+    description: 'Path to write the scan report'
+    required: false
+    default: 'owasp-wtf-report.json'
+  ignore:
+    description: 'Comma-separated ignore patterns'
+    required: false
+    default: ''
+  ai:
+    description: 'Enable AI-assisted analysis (requires provider config / env)'
+    required: false
+    default: 'false'
+  fail-on-findings:
+    description: 'Fail the workflow if findings at or above --severity are reported'
+    required: false
+    default: 'false'
+  version:
+    description: 'CLI version to install (defaults to latest published)'
+    required: false
+    default: 'latest'
+  upload-artifact:
+    description: 'Upload the report as a workflow artifact'
+    required: false
+    default: 'true'
+  artifact-name:
+    description: 'Name for the uploaded artifact'
+    required: false
+    default: 'owasp-wtf-report'
+  node-version:
+    description: 'Node.js version used to run the CLI'
+    required: false
+    default: '22'
+  github-token:
+    description: 'Token used to install the CLI from GitHub Packages (needs read:packages)'
+    required: false
+    default: ${{ github.token }}
+
+outputs:
+  report-path:
+    description: 'Path to the generated report file'
+    value: ${{ steps.scan.outputs.report-path }}
+  findings:
+    description: 'Total number of findings reported (when format=json)'
+    value: ${{ steps.scan.outputs.findings }}
+
+runs:
+  using: 'composite'
+  steps:
+    - name: Set up Node.js
+      uses: actions/setup-node@v4
+      with:
+        node-version: ${{ inputs.node-version }}
+        registry-url: 'https://npm.pkg.github.com'
+        scope: '@decoperations'
+
+    - name: Install OWASP.WTF CLI
+      shell: bash
+      env:
+        NODE_AUTH_TOKEN: ${{ inputs.github-token }}
+      run: |
+        npm install -g "@decoperations/owasp-wtf@${{ inputs.version }}"
+
+    - name: Run OWASP.WTF scan
+      id: scan
+      shell: bash
+      run: |
+        set -o pipefail
+        args=(
+          "${{ inputs.directory }}"
+          --severity "${{ inputs.severity }}"
+          --format   "${{ inputs.format }}"
+          --output   "${{ inputs.output }}"
+        )
+        if [ -n "${{ inputs.ignore }}" ]; then
+          args+=(--ignore "${{ inputs.ignore }}")
+        fi
+        if [ "${{ inputs.ai }}" = "true" ]; then
+          args+=(--ai)
+        fi
+
+        echo "::group::owasp-wtf ${args[*]}"
+        owasp-wtf "${args[@]}" || scan_exit=$?
+        echo "::endgroup::"
+
+        echo "report-path=${{ inputs.output }}" >> "$GITHUB_OUTPUT"
+
+        findings=""
+        if [ "${{ inputs.format }}" = "json" ] && [ -f "${{ inputs.output }}" ]; then
+          findings=$(node -e "try{const r=JSON.parse(require('fs').readFileSync('${{ inputs.output }}','utf8'));const n=Array.isArray(r)?r.length:(r.findings?r.findings.length:(r.summary&&typeof r.summary.total==='number'?r.summary.total:''));process.stdout.write(String(n??''))}catch(e){process.stdout.write('')}")
+          echo "findings=$findings" >> "$GITHUB_OUTPUT"
+          echo "Findings: ${findings:-unknown}"
+        fi
+
+        if [ "${{ inputs.fail-on-findings }}" = "true" ] && [ -n "$findings" ] && [ "$findings" != "0" ]; then
+          echo "::error::OWASP.WTF reported $findings finding(s) at severity '${{ inputs.severity }}' or higher."
+          exit 1
+        fi
+
+        exit ${scan_exit:-0}
+
+    - name: Upload scan report
+      if: ${{ always() && inputs.upload-artifact == 'true' && hashFiles(inputs.output) != '' }}
+      uses: actions/upload-artifact@v4
+      with:
+        name: ${{ inputs.artifact-name }}
+        path: ${{ inputs.output }}
