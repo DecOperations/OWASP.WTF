@@ -17,6 +17,7 @@ module.exports = {
         'chore',
         'revert',
         'security',
+        'merge',
       ],
     ],
     'subject-case': [0],

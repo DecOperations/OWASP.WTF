@@ -2,17 +2,13 @@
 
 import { Command } from 'commander';
 import chalk from 'chalk';
-import ora from 'ora';
-import { resolve } from 'node:path';
-import { writeFileSync } from 'node:fs';
-import { scanDirectory } from './scanner.js';
-import { allRules, rulesAtSeverity } from './rules/index.js';
-import { analyze } from './analyzer.js';
-import { formatTerminal, formatJson, formatHtml } from './reporter.js';
-import { loadConfig, runSetup, getResolvedAiConfig } from './config.js';
-import { analyzeWithAi } from './ai.js';
-import type { AiAnalysisResult } from './ai.js';
-import { VERSION_STRING } from './version.js';
+import { runScanCommand, type OutputFormat } from './commands/scan.js';
+import { runDoctorCommand } from './commands/doctor.js';
+import { runInstallToolsCommand } from './commands/install-tools.js';
+import { runSetup } from './config.js';
+import type { Severity } from './core/types.js';
+import type { ScanMode } from './adapters/index.js';
+import { VERSION, VERSION_STRING } from './version.js';
 
 // OWASP = ? · WTF = ?
 const TAGLINES: [string, string][] = [
@@ -42,189 +38,165 @@ function getBanner(): string {
   ${chalk.red('██    ██')} ${chalk.red('██')} ${chalk.red('███')} ${chalk.red('██')} ${chalk.yellow('██   ██')}      ${chalk.yellow('██')} ${chalk.green('██')}         ${chalk.blue('██')} ${chalk.blue('███')} ${chalk.blue('██')}    ${chalk.magenta('██')}    ${chalk.magenta('██')}
    ${chalk.red('██████')}   ${chalk.red('███')} ${chalk.red('███')}  ${chalk.yellow('██   ██')} ${chalk.yellow('███████')} ${chalk.green('██')}          ${chalk.blue('███')} ${chalk.blue('███')}     ${chalk.magenta('██')}    ${chalk.magenta('██')}
   ${chalk.dim(owasp)} ${chalk.dim('·')} ${chalk.dim(wtf)}
-  ${chalk.dim('v0.1.0')}
+  ${chalk.dim(`v${VERSION} · meta-scanner`)}
 `;
+}
+
+function parseIgnore(s: string | undefined): string[] {
+  return s ? s.split(',').map((p) => p.trim()).filter(Boolean) : [];
+}
+
+function parseFormat(s: string | undefined, allowed: OutputFormat[]): OutputFormat {
+  if (s && allowed.includes(s as OutputFormat)) return s as OutputFormat;
+  return 'terminal';
 }
 
 const program = new Command();
 
 program
   .name('owasp-wtf')
-  .description('AI-powered OWASP security auditing CLI')
-  .version(VERSION_STRING)
-  .argument('[directory]', 'Directory to scan', '.')
-  .option('-f, --format <type>', 'Output format: terminal, json, html', 'terminal')
-  .option('-o, --output <file>', 'Write report to file')
-  .option(
-    '-s, --severity <level>',
-    'Minimum severity: critical, high, medium, low, info',
-    'low',
-  )
-  .option('-i, --ignore <patterns>', 'Comma-separated ignore patterns', '')
-  .option('--ai', 'Enable AI-assisted analysis')
-  .option('--setup', 'Run interactive configuration setup')
-  .option('--no-color', 'Disable color output')
-  .option('--verbose', 'Show verbose output')
-  .action(async (directory: string, opts) => {
-    // Handle --setup: run config wizard and exit
-    if (opts.setup) {
-      await runSetup();
-      return;
-    }
+  .description('AppSec orchestrator: best OSS scanners, one OWASP Top 10 report, agent-ready fixes.')
+  .version(VERSION_STRING);
 
-    // If --ai is requested, ensure config exists (first-run setup)
-    let aiResult: AiAnalysisResult | null = null;
-    let config = loadConfig();
-    if (opts.ai && (!config || !config.ai?.provider)) {
-      console.log(chalk.yellow('  No AI provider configured yet.'));
-      config = await runSetup();
-    }
-
-    // Show banner
-    if (opts.format === 'terminal') {
-      console.log(getBanner());
-    }
-
-    const targetDir = resolve(directory);
-
-    if (opts.verbose) {
-      console.log(chalk.dim(`  Scanning: ${targetDir}`));
-      console.log(chalk.dim(`  Format:   ${opts.format}`));
-      console.log(chalk.dim(`  Severity: ${opts.severity}+`));
-      if (opts.ai && config?.ai) {
-        console.log(chalk.dim(`  AI:       ${config.ai.provider} (${config.ai.model})`));
-      }
-      console.log('');
-    }
-
-    // Start spinner
-    const spinner = opts.format === 'terminal' ? ora({
-      text: chalk.blue('Scanning for security vulnerabilities...'),
-      spinner: 'dots12',
-      color: 'blue',
-    }).start() : null;
-
-    try {
-      // Step 1: Discover files
-      if (spinner) spinner.text = chalk.blue('Discovering source files...');
-      const ignorePatterns = opts.ignore
-        ? opts.ignore.split(',').map((p: string) => p.trim())
-        : [];
-      const files = scanDirectory(targetDir, ignorePatterns);
-
-      if (files.length === 0) {
-        spinner?.warn(chalk.yellow('No source files found to scan.'));
-        console.log(chalk.dim('  Supported: .ts, .tsx, .js, .jsx, .py, .go, .java, .rb, .php'));
-        process.exit(0);
-      }
-
-      if (spinner) spinner.text = chalk.blue(`Analyzing ${files.length} files against ${allRules.length} security rules...`);
-
-      // Step 2: Get rules at the requested severity level
-      const rules = rulesAtSeverity(opts.severity);
-
-      // Step 3: Static analysis
-      const result = analyze(files, rules);
-
-      // Step 4: AI analysis
-      if (opts.ai && config?.ai && config.ai.provider !== 'none') {
-        if (spinner) spinner.text = chalk.blue(`Running AI analysis with ${config.ai.provider} (${config.ai.model})...`);
-        try {
-          const resolvedConfig = getResolvedAiConfig(config);
-          aiResult = await analyzeWithAi(result, files, resolvedConfig);
-        } catch (err) {
-          spinner?.warn(chalk.yellow(`AI analysis failed: ${err instanceof Error ? err.message : String(err)}`));
-        }
-      }
-
-      spinner?.stop();
-
-      // Step 5: Format output
-      let output: string;
-      switch (opts.format) {
-        case 'json':
-          output = formatJson(result, aiResult ?? undefined);
-          break;
-        case 'html':
-          output = formatHtml(result);
-          break;
-        case 'terminal':
-        default:
-          output = formatTerminal(result);
-          // Append AI insights to terminal output
-          if (aiResult) {
-            output += formatAiTerminal(aiResult);
-          }
-          break;
-      }
-
-      // Step 6: Write or print
-      if (opts.output) {
-        writeFileSync(opts.output, output, 'utf-8');
-        if (opts.format === 'terminal') {
-          console.log(
-            chalk.green(`  Report written to ${opts.output}`),
-          );
-        }
-      } else {
-        console.log(output);
-      }
-
-      // Exit with non-zero if critical findings
-      if (result.summary.critical > 0) {
-        process.exit(2);
-      }
-      if (result.summary.high > 0) {
-        process.exit(1);
-      }
-    } catch (err) {
-      spinner?.fail(chalk.red('Scan failed'));
-      console.error(chalk.red(`  Error: ${err instanceof Error ? err.message : String(err)}`));
-      process.exit(1);
-    }
-  });
-
-function formatAiTerminal(ai: AiAnalysisResult): string {
-  const lines: string[] = [
-    '',
-    chalk.cyan('  ┌─────────────────────────────────────────┐'),
-    chalk.cyan('  │') + chalk.bold.cyan('         AI Security Assessment          ') + chalk.cyan('│'),
-    chalk.cyan('  └─────────────────────────────────────────┘'),
-    '',
-  ];
-
-  if (ai.overallSummary) {
-    lines.push(chalk.white(`  ${ai.overallSummary}`));
-    lines.push('');
-  }
-
-  if (ai.riskAssessment) {
-    const riskColors: Record<string, (s: string) => string> = {
-      critical: chalk.bgRed.white,
-      high: chalk.red,
-      medium: chalk.yellow,
-      low: chalk.green,
-    };
-    const colorFn = riskColors[ai.riskAssessment] || chalk.dim;
-    lines.push(`  Risk Level: ${colorFn(ai.riskAssessment.toUpperCase())}`);
-    lines.push('');
-  }
-
-  if (ai.insights.length > 0) {
-    lines.push(chalk.dim('  AI Insights:'));
-    for (const insight of ai.insights) {
-      const fpBadge = insight.falsePositive
-        ? chalk.dim.strikethrough(' FP ')
-        : chalk.red(' TP ');
-      lines.push(`  ${fpBadge} ${chalk.bold(insight.findingId)} — ${insight.assessment}`);
-      if (insight.remediation) {
-        lines.push(chalk.dim(`       Fix: ${insight.remediation}`));
-      }
-    }
-    lines.push('');
-  }
-
-  return lines.join('\n');
+interface ScanOpts {
+  format?: string;
+  output?: string;
+  ignore?: string;
+  failOn?: string;
+  verbose?: boolean;
+  showAll?: boolean;
+  agent?: string;
+  banner?: boolean;
 }
 
-program.parse();
+interface ScanOptionDefaults {
+  format?: OutputFormat;
+  output?: string;
+  failOn?: Severity;
+}
+
+function attachScanOptions(cmd: Command, defaults: ScanOptionDefaults = {}): Command {
+  const format = cmd.createOption(
+    '-f, --format <type>',
+    'Output format: terminal, json, sarif, markdown, html, fix-plan',
+  );
+  if (defaults.format) format.default(defaults.format);
+  else format.default('terminal');
+
+  const output = cmd.createOption('-o, --output <file>', 'Write report to file instead of stdout');
+  if (defaults.output) output.default(defaults.output);
+
+  const failOn = cmd.createOption(
+    '--fail-on <severity>',
+    'Exit non-zero if any finding ≥ severity: critical, high, medium, low',
+  );
+  if (defaults.failOn) failOn.default(defaults.failOn);
+
+  return cmd
+    .addOption(format)
+    .addOption(output)
+    .option('-i, --ignore <patterns>', 'Comma-separated ignore globs', '')
+    .addOption(failOn)
+    .option('--agent <agent>', 'For --format=fix-plan: claude, cursor, codex, copilot, generic', 'generic')
+    .option('--show-all', 'Show all findings in terminal output (default: top 15)')
+    .option('--verbose', 'Verbose output')
+    .option('--no-banner', 'Suppress the ASCII banner');
+}
+
+async function dispatch(mode: ScanMode, directory: string, opts: ScanOpts): Promise<void> {
+  const format = parseFormat(opts.format, ['terminal', 'json', 'sarif', 'markdown', 'html', 'fix-plan']);
+  if (format === 'terminal' && opts.banner !== false) {
+    console.log(getBanner());
+  }
+  const exitCode = await runScanCommand({
+    directory,
+    mode,
+    format,
+    output: opts.output,
+    ignore: parseIgnore(opts.ignore),
+    failOn: opts.failOn as Severity | undefined,
+    verbose: opts.verbose,
+    showAll: opts.showAll,
+    agent: opts.agent as 'claude' | 'cursor' | 'codex' | 'copilot' | 'generic' | undefined,
+  });
+  process.exit(exitCode);
+}
+
+// ─── quick ─────────────────────────────────────────────────────────────────
+attachScanOptions(
+  program.command('quick')
+    .description('Pre-commit fast scan: native rules + secrets')
+    .argument('[directory]', 'Directory to scan', '.')
+).action((directory: string, opts: ScanOpts) => dispatch('quick', directory, opts));
+
+// ─── scan ──────────────────────────────────────────────────────────────────
+attachScanOptions(
+  program.command('scan')
+    .description('Standard scan: native + Semgrep + Gitleaks + Trivy')
+    .argument('[directory]', 'Directory to scan', '.')
+).action((directory: string, opts: ScanOpts) => dispatch('scan', directory, opts));
+
+// ─── deep ──────────────────────────────────────────────────────────────────
+attachScanOptions(
+  program.command('deep')
+    .description('Full coverage: scan + Syft + Grype + Hadolint')
+    .argument('[directory]', 'Directory to scan', '.')
+).action((directory: string, opts: ScanOpts) => dispatch('deep', directory, opts));
+
+// ─── ci ────────────────────────────────────────────────────────────────────
+attachScanOptions(
+  program.command('ci')
+    .description('CI mode: standard scan, SARIF output by default, fail-on high')
+    .argument('[directory]', 'Directory to scan', '.'),
+  { format: 'sarif', output: 'owasp-wtf.sarif', failOn: 'high' as Severity },
+).action((directory: string, opts: ScanOpts) =>
+  dispatch('scan', directory, { ...opts, banner: false }),
+);
+
+// ─── fix-plan ──────────────────────────────────────────────────────────────
+attachScanOptions(
+  program.command('fix-plan')
+    .description('Run standard scan and emit SECURITY_FIX_PLAN.md for coding agents')
+    .argument('[directory]', 'Directory to scan', '.'),
+  { format: 'fix-plan', output: 'SECURITY_FIX_PLAN.md' },
+).action((directory: string, opts: ScanOpts) => dispatch('scan', directory, opts));
+
+// ─── doctor ────────────────────────────────────────────────────────────────
+program.command('doctor')
+  .description('Check which scanner tools are installed')
+  .action(async () => {
+    process.exit(await runDoctorCommand());
+  });
+
+// ─── install-tools ─────────────────────────────────────────────────────────
+program.command('install-tools')
+  .description('Print install instructions for the recommended scanner suite')
+  .action(() => {
+    process.exit(runInstallToolsCommand());
+  });
+
+// ─── setup ─────────────────────────────────────────────────────────────────
+program.command('setup')
+  .description('Interactive AI provider setup (for AI-augmented analysis)')
+  .action(async () => {
+    await runSetup();
+    process.exit(0);
+  });
+
+// ─── default (no subcommand) — backward-compatible smart scan ─────────────
+// When no subcommand is provided, fall back to `scan` mode.
+const KNOWN_COMMANDS = new Set([
+  'quick', 'scan', 'deep', 'ci', 'fix-plan', 'doctor', 'install-tools', 'setup', 'help',
+]);
+
+const argv = process.argv.slice(2);
+const first = argv.find((a) => !a.startsWith('-'));
+if (!first || !KNOWN_COMMANDS.has(first)) {
+  // Prepend implicit `scan` so commander dispatches to that subcommand.
+  process.argv.splice(2, 0, 'scan');
+}
+
+program.parseAsync(process.argv).catch((err) => {
+  console.error(chalk.red(`Error: ${err instanceof Error ? err.message : String(err)}`));
+  process.exit(1);
+});
