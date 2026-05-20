@@ -4,7 +4,8 @@
   "private": true,
   "license": "MIT",
   "scripts": {
-    "dev": "next dev",
+    "dev": "node scripts/snapshot-content.mjs && next dev",
+    "prebuild": "node scripts/snapshot-content.mjs",
     "build": "next build",
     "start": "next start",
     "lint": "tsc --noEmit",
