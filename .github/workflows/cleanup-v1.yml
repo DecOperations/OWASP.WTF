@@ -1,0 +1,53 @@
+name: One-shot cleanup of v1.0.0
+
+on:
+  push:
+    branches: [main]
+    paths:
+      - .github/workflows/cleanup-v1.yml
+  workflow_dispatch:
+
+permissions:
+  contents: write
+
+concurrency:
+  group: cleanup-v1
+  cancel-in-progress: false
+
+jobs:
+  cleanup:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          token: ${{ secrets.GITHUB_TOKEN }}
+
+      - name: Delete release v1.0.0 (and underlying tag)
+        env:
+          GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+        run: |
+          if gh release view v1.0.0 >/dev/null 2>&1; then
+            echo "Deleting release v1.0.0 with --cleanup-tag"
+            gh release delete v1.0.0 --yes --cleanup-tag
+          else
+            echo "No release v1.0.0 found — skipping release delete"
+          fi
+
+      - name: Force-delete v1.0.0 tag if still present
+        env:
+          GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+        run: |
+          if gh api repos/${{ github.repository }}/git/refs/tags/v1.0.0 >/dev/null 2>&1; then
+            echo "Tag v1.0.0 still present — deleting via git refs API"
+            gh api -X DELETE repos/${{ github.repository }}/git/refs/tags/v1.0.0
+          else
+            echo "Tag v1.0.0 already gone"
+          fi
+
+      - name: Self-delete this workflow
+        run: |
+          git config user.name "github-actions[bot]"
+          git config user.email "41898282+github-actions[bot]@users.noreply.github.com"
+          git rm .github/workflows/cleanup-v1.yml
+          git commit -m "chore: remove one-shot cleanup-v1 workflow [skip ci]"
+          git push origin main
