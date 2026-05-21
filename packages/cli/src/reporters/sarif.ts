@@ -62,6 +62,7 @@ export function formatSarif(report: ScanReport): string {
             package: f.packageName,
             installedVersion: f.installedVersion,
             fixedVersion: f.fixedVersion,
+            remediation: f.remediation,
           },
           partialFingerprints: { owaspWtf: f.fingerprint },
           locations: f.file
@@ -78,9 +79,6 @@ export function formatSarif(report: ScanReport): string {
                 },
               ]
             : [],
-          fixes: f.remediation
-            ? [{ description: { text: f.remediation } }]
-            : undefined,
         })),
         invocations: [
           {
