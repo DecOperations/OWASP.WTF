@@ -59,12 +59,21 @@ owasp-wtf --help
 ## GitHub Packages (org-internal)
 
 The CLI is also published to GitHub Packages as `@decoperations/owasp-wtf`.
-You'll need a token with `read:packages`:
+Consuming repos in DecOperations or Dial-WTF should follow the dedicated
+guide — it covers same-org, cross-org (Dial-WTF needs a PAT stored as
+`DECOPERATIONS_NPM_TOKEN`), local dev, and the most common 401/404
+failures:
+
+➡️ [GitHub Packages setup](./github-packages.md)
+
+Quick version for a one-off install:
 
 ```bash
-echo "//npm.pkg.github.com/:_authToken=$GITHUB_TOKEN" >> ~/.npmrc
-echo "@decoperations:registry=https://npm.pkg.github.com" >> ~/.npmrc
-npm install -g @decoperations/owasp-wtf
+cat > .npmrc <<'EOF'
+@decoperations:registry=https://npm.pkg.github.com
+//npm.pkg.github.com/:_authToken=${NODE_AUTH_TOKEN}
+EOF
+NODE_AUTH_TOKEN=ghp_xxx npm install -g @decoperations/owasp-wtf
 ```
 
 ## Verifying the install

@@ -27,7 +27,11 @@ jobs:
         with:
           node-version: '22'
           cache: 'pnpm'
+          registry-url: 'https://npm.pkg.github.com'
+          scope: '@decoperations'
       - run: pnpm install --frozen-lockfile
+        env:
+          NODE_AUTH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
       - name: Validate PR commits
         run: |
           npx commitlint \
@@ -45,8 +49,12 @@ jobs:
         with:
           node-version: '22'
           cache: 'pnpm'
+          registry-url: 'https://npm.pkg.github.com'
+          scope: '@decoperations'
 
       - run: pnpm install --frozen-lockfile
+        env:
+          NODE_AUTH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
       - name: Lint
         run: pnpm lint
       - name: Typecheck
