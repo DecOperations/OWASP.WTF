@@ -9,6 +9,7 @@ Welcome. Pick a topic.
 | [Configuration](./configuration.md) | `~/.owasp-wtf/config.json`, env vars, `--setup` |
 | [AI providers](./ai-providers.md) | Claude, OpenAI, Anthropic API, Ollama, Codex |
 | [GitHub Action](./github-action.md) | Inputs, outputs, recipes for `decoperations/owasp.wtf` |
+| [GitHub Packages](./github-packages.md) | Auth for `@decoperations/owasp-wtf` (same-org, cross-org, local) |
 | [Rules](./rules.md) | What we detect and how |
 
 Not here yet? [Open an issue](https://github.com/DecOperations/OWASP.WTF/issues/new)

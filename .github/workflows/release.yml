@@ -40,6 +40,8 @@ jobs:
           scope: '@decoperations'
 
       - run: pnpm install --frozen-lockfile
+        env:
+          NODE_AUTH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
 
       - name: Lint
         run: pnpm lint
@@ -94,6 +96,8 @@ jobs:
           scope: '@decoperations'
 
       - run: pnpm install --frozen-lockfile
+        env:
+          NODE_AUTH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
 
       - name: Build CLI with release metadata
         env:
