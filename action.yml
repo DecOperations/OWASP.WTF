@@ -96,6 +96,7 @@ runs:
       if: ${{ inputs.install-tools != '' }}
       env:
         TOOLS: ${{ inputs.install-tools }}
+        GH_TOKEN: ${{ inputs.github-token }}
       run: |
         set -euo pipefail
         IFS=',' read -ra REQUESTED <<< "$TOOLS"
@@ -109,8 +110,38 @@ runs:
               echo "$HOME/.local/bin" >> "$GITHUB_PATH"
               ;;
             gitleaks)
-              curl -sSfL https://raw.githubusercontent.com/gitleaks/gitleaks/master/scripts/install.sh \
-                | sh -s -- -b /usr/local/bin
+              # Upstream removed scripts/install.sh, so we resolve the latest
+              # release tag via the GitHub API and download the binary directly.
+              # Asset naming uses `x64` (not `amd64`) — see issue #21.
+              os="$(uname -s | tr '[:upper:]' '[:lower:]')"
+              case "$(uname -m)" in
+                x86_64|amd64) arch="x64" ;;
+                arm64|aarch64) arch="arm64" ;;
+                armv7l|armv6l) arch="armv7" ;;
+                *) echo "::error::Unsupported arch for gitleaks: $(uname -m)"; exit 1 ;;
+              esac
+              api_args=(-sSfL -H "Accept: application/vnd.github+json")
+              if [ -n "${GH_TOKEN:-}" ]; then
+                api_args+=(-H "Authorization: Bearer ${GH_TOKEN}")
+              fi
+              tag="$(curl "${api_args[@]}" \
+                https://api.github.com/repos/gitleaks/gitleaks/releases/latest \
+                | grep -oE '"tag_name":\s*"[^"]+"' | head -n1 \
+                | sed -E 's/.*"tag_name":\s*"([^"]+)".*/\1/')"
+              if [ -z "$tag" ]; then
+                echo "::error::Failed to resolve latest gitleaks release tag"
+                exit 1
+              fi
+              version="${tag#v}"
+              asset="gitleaks_${version}_${os}_${arch}.tar.gz"
+              url="https://github.com/gitleaks/gitleaks/releases/download/${tag}/${asset}"
+              echo "Downloading $url"
+              tmp="$(mktemp -d)"
+              curl -sSfL "$url" -o "$tmp/gitleaks.tar.gz"
+              tar -xzf "$tmp/gitleaks.tar.gz" -C "$tmp" gitleaks
+              sudo install -m 0755 "$tmp/gitleaks" /usr/local/bin/gitleaks
+              rm -rf "$tmp"
+              gitleaks version
               ;;
             trivy)
               curl -sSfL https://raw.githubusercontent.com/aquasecurity/trivy/main/contrib/install.sh \
