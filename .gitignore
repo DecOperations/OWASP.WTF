@@ -42,3 +42,6 @@ pnpm-debug.log*
 # UnicornDev generated
 .unicorn/
 .claude/.unicorn-version
+
+# npm pack artifacts
+*.tgz
