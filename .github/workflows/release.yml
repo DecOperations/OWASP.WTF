@@ -111,6 +111,25 @@ jobs:
           NODE_AUTH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
         run: pnpm --filter @decoperations/owasp-wtf publish --no-git-checks --access public
 
+      - name: Pack CLI tarball
+        id: pack
+        working-directory: packages/cli
+        run: |
+          # `pnpm pack` produces the same tarball npm would publish.
+          # The action installs from this asset to avoid GHP cross-repo auth.
+          tarball="$(pnpm pack | tail -n1)"
+          echo "tarball=$tarball" >> "$GITHUB_OUTPUT"
+          echo "tarball_path=$(pwd)/$tarball" >> "$GITHUB_OUTPUT"
+          ls -la "$tarball"
+
+      - name: Attach tarball to GitHub Release
+        env:
+          GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+          TAG: ${{ needs.release.outputs.new_release_git_tag }}
+          TARBALL: ${{ steps.pack.outputs.tarball_path }}
+        run: |
+          gh release upload "$TAG" "$TARBALL" --clobber --repo "${{ github.repository }}"
+
       - name: Smoke test installed package
         env:
           NODE_AUTH_TOKEN: ${{ secrets.GITHUB_TOKEN }}

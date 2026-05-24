@@ -81,15 +81,72 @@ runs:
       uses: actions/setup-node@v4
       with:
         node-version: ${{ inputs.node-version }}
-        registry-url: 'https://npm.pkg.github.com'
-        scope: '@decoperations'
 
     - name: Install OWASP.WTF CLI
       shell: bash
       env:
-        NODE_AUTH_TOKEN: ${{ inputs.github-token }}
+        GH_TOKEN: ${{ inputs.github-token }}
+        VERSION_INPUT: ${{ inputs.version }}
       run: |
-        npm install -g "@decoperations/owasp-wtf@${{ inputs.version }}"
+        # Install the CLI from a GitHub Release tarball asset. This avoids
+        # GitHub Packages cross-repo auth limitations: a consumer repo's
+        # default GITHUB_TOKEN cannot read packages from another repo, but
+        # it can always read release assets (public: no auth; private: this
+        # token suffices).
+        set -euo pipefail
+
+        api_args=(-sSfL -H "Accept: application/vnd.github+json")
+        if [ -n "${GH_TOKEN:-}" ]; then
+          api_args+=(-H "Authorization: Bearer ${GH_TOKEN}")
+        fi
+
+        version_input="${VERSION_INPUT:-latest}"
+        if [ "$version_input" = "latest" ] || [ -z "$version_input" ]; then
+          tag="$(curl "${api_args[@]}" \
+            "https://api.github.com/repos/DecOperations/OWASP.WTF/releases?per_page=30" \
+            | grep -oE '"tag_name":[[:space:]]*"cli-v[^"]+"' | head -n1 \
+            | sed -E 's/.*"(cli-v[^"]+)".*/\1/')"
+          if [ -z "$tag" ]; then
+            echo "::error::Could not resolve latest cli-v* release tag"
+            exit 1
+          fi
+        else
+          # Accept "0.2.2", "v0.2.2", or "cli-v0.2.2"
+          raw="$version_input"
+          raw="${raw#v}"
+          raw="${raw#cli-v}"
+          tag="cli-v${raw}"
+        fi
+        version="${tag#cli-v}"
+
+        # Resolve the tarball asset via the releases API so this works on
+        # private repos too (Accept: octet-stream redirects to a signed URL).
+        release_json="$(curl "${api_args[@]}" \
+          "https://api.github.com/repos/DecOperations/OWASP.WTF/releases/tags/${tag}")"
+        asset_name="decoperations-owasp-wtf-${version}.tgz"
+        asset_url="$(printf '%s' "$release_json" \
+          | python3 -c "import sys,json
+d=json.load(sys.stdin)
+name=sys.argv[1]
+for a in d.get('assets',[]):
+    if a['name']==name:
+        print(a['url']);break" "$asset_name")"
+        if [ -z "$asset_url" ]; then
+          echo "::error::Release ${tag} has no asset named ${asset_name}."
+          echo "::error::Older releases may pre-date the tarball-asset rollout — pin a newer version (e.g. version: '0.2.3+') or use version: 'latest'."
+          exit 1
+        fi
+
+        tmp="$(mktemp -d)"
+        dl_args=(-sSfL -H "Accept: application/octet-stream")
+        if [ -n "${GH_TOKEN:-}" ]; then
+          dl_args+=(-H "Authorization: Bearer ${GH_TOKEN}")
+        fi
+        echo "Downloading ${asset_name} from ${tag}"
+        curl "${dl_args[@]}" -o "$tmp/cli.tgz" "$asset_url"
+        npm install -g "$tmp/cli.tgz"
+        rm -rf "$tmp"
+        owasp-wtf --version
 
     - name: Install OSS scanners
       shell: bash
