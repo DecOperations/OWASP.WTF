@@ -167,11 +167,12 @@ jobs:
   self-scan-action:
     name: Self-scan (composite action)
     runs-on: ubuntu-latest
-    # Non-blocking until cli-v0.2.3+ is published. The action installs the CLI
+    # Disabled until cli-v0.2.3+ is published. The action installs the CLI
     # from a release tarball asset (added in PR #26); releases predating that
     # rollout (≤ cli-v0.2.2) don't carry the asset and the install step fails
-    # by design. Once the next release ships from main, this job goes green.
-    continue-on-error: true
+    # by design. Re-enable by removing this `if:` once the next release ships
+    # from main — tracked in issue #28.
+    if: false
     steps:
       - uses: actions/checkout@v4
       - name: Run OWASP.WTF action against this repo
