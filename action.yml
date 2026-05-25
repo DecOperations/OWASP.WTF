@@ -125,12 +125,8 @@ runs:
           "https://api.github.com/repos/DecOperations/OWASP.WTF/releases/tags/${tag}")"
         asset_name="decoperations-owasp-wtf-${version}.tgz"
         asset_url="$(printf '%s' "$release_json" \
-          | python3 -c "import sys,json
-d=json.load(sys.stdin)
-name=sys.argv[1]
-for a in d.get('assets',[]):
-    if a['name']==name:
-        print(a['url']);break" "$asset_name")"
+          | jq -r --arg name "$asset_name" \
+              '.assets[]? | select(.name == $name) | .url')"
         if [ -z "$asset_url" ]; then
           echo "::error::Release ${tag} has no asset named ${asset_name}."
           echo "::error::Older releases may pre-date the tarball-asset rollout — pin a newer version (e.g. version: '0.2.3+') or use version: 'latest'."
