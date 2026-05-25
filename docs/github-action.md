@@ -227,3 +227,11 @@ jobs:
 
 The action definition lives in [`action.yml`](../action.yml) at the repo root.
 PRs welcome — see [`CONTRIBUTING.md`](../CONTRIBUTING.md).
+
+## Dogfooding
+
+This repo runs OWASP.WTF against itself on every PR via
+[`.github/workflows/dogfood.yml`](../.github/workflows/dogfood.yml). It scans
+with the CLI built from PR source **and** with the published composite action,
+uploads SARIF to GitHub code scanning, and posts a sticky summary comment on
+the PR. It's a working real-world example of wiring the action into CI.
