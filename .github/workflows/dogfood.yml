@@ -79,16 +79,22 @@ jobs:
         run: |
           node packages/cli/dist/index.js scan . \
             --no-banner \
+            --ignore "$IGNORE_GLOBS" \
             --format sarif \
             --output owasp-wtf.sarif
+        env:
+          IGNORE_GLOBS: '**/.next/**,**/dist/**,**/out/**,**/node_modules/**,**/.turbo/**,**/coverage/**,**/.pnpm-store/**,pnpm-lock.yaml'
         continue-on-error: true
 
       - name: Scan (JSON for summary)
         run: |
           node packages/cli/dist/index.js scan . \
             --no-banner \
+            --ignore "$IGNORE_GLOBS" \
             --format json \
             --output owasp-wtf.json
+        env:
+          IGNORE_GLOBS: '**/.next/**,**/dist/**,**/out/**,**/node_modules/**,**/.turbo/**,**/coverage/**,**/.pnpm-store/**,pnpm-lock.yaml'
         continue-on-error: true
 
       - name: Upload SARIF to GitHub code scanning
@@ -175,6 +181,7 @@ jobs:
           format: sarif
           output: owasp-wtf-action.sarif
           fail-on: ''
+          ignore: '**/.next/**,**/dist/**,**/out/**,**/node_modules/**,**/.turbo/**,**/coverage/**,**/.pnpm-store/**,pnpm-lock.yaml'
           install-tools: 'semgrep,gitleaks,trivy'
           upload-sarif: 'true'
           artifact-name: owasp-wtf-action-report
