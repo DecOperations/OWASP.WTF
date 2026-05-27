@@ -32,6 +32,12 @@ updates:
           - "husky"
           - "turbo"
           - "typescript"
+    ignore:
+      # Compiler / runtime-types majors propagate everywhere; review by hand.
+      - dependency-name: "typescript"
+        update-types: ["version-update:semver-major"]
+      - dependency-name: "@types/node"
+        update-types: ["version-update:semver-major"]
 
   # CLI package — the published artifact. Treat patch + minor as automerge-ready,
   # major bumps as review-required (Commander/Chalk majors tend to break ESM).
@@ -84,6 +90,12 @@ updates:
       - dependency-name: "react"
         update-types: ["version-update:semver-major"]
       - dependency-name: "react-dom"
+        update-types: ["version-update:semver-major"]
+      # Hold typescript + @types/node majors for human review — they tend to
+      # surface compiler-target / lib-shape changes across the whole repo.
+      - dependency-name: "typescript"
+        update-types: ["version-update:semver-major"]
+      - dependency-name: "@types/node"
         update-types: ["version-update:semver-major"]
 
   # GitHub Actions — keeps the composite action's pinned versions current
