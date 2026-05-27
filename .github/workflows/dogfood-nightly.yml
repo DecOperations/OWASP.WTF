@@ -123,14 +123,14 @@ jobs:
 
       - name: Upload SARIF to GitHub code scanning
         if: ${{ always() && hashFiles('owasp-wtf-deep.sarif') != '' }}
-        uses: github/codeql-action/upload-sarif@v3
+        uses: github/codeql-action/upload-sarif@v4
         with:
           sarif_file: owasp-wtf-deep.sarif
           category: owasp-wtf-deep
 
       - name: Upload reports
         if: always()
-        uses: actions/upload-artifact@v4
+        uses: actions/upload-artifact@v7
         with:
           name: owasp-wtf-nightly-deep
           path: |

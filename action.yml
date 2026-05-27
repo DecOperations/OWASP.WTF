@@ -343,14 +343,14 @@ runs:
 
     - name: Upload SARIF to GitHub code scanning
       if: ${{ always() && (inputs.upload-sarif == 'true' || (inputs.upload-sarif == 'auto' && inputs.format == 'sarif')) && hashFiles(inputs.output) != '' }}
-      uses: github/codeql-action/upload-sarif@v3
+      uses: github/codeql-action/upload-sarif@v4
       with:
         sarif_file: ${{ inputs.output }}
         category: owasp-wtf
 
     - name: Upload scan report
       if: ${{ always() && inputs.upload-artifact == 'true' && hashFiles(inputs.output) != '' }}
-      uses: actions/upload-artifact@v4
+      uses: actions/upload-artifact@v7
       with:
         name: ${{ inputs.artifact-name }}
         path: ${{ inputs.output }}
