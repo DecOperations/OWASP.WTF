@@ -343,7 +343,7 @@ runs:
 
     - name: Upload SARIF to GitHub code scanning
       if: ${{ always() && (inputs.upload-sarif == 'true' || (inputs.upload-sarif == 'auto' && inputs.format == 'sarif')) && hashFiles(inputs.output) != '' }}
-      uses: github/codeql-action/upload-sarif@v3
+      uses: github/codeql-action/upload-sarif@v4
       with:
         sarif_file: ${{ inputs.output }}
         category: owasp-wtf
