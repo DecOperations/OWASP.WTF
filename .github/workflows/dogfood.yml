@@ -29,7 +29,7 @@ jobs:
     steps:
       - uses: actions/checkout@v4
       - uses: pnpm/action-setup@v4
-      - uses: actions/setup-node@v4
+      - uses: actions/setup-node@v6
         with:
           node-version: '22'
           cache: 'pnpm'
@@ -178,7 +178,7 @@ jobs:
 
       - name: Upsert sticky PR comment
         if: ${{ github.event_name == 'pull_request' && hashFiles('comment.md') != '' }}
-        uses: marocchino/sticky-pull-request-comment@v2
+        uses: marocchino/sticky-pull-request-comment@v3
         with:
           header: owasp-wtf-self-scan
           path: comment.md
