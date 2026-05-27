@@ -5,10 +5,13 @@ const SUPPORTED_EXTENSIONS = new Set([
   '.ts', '.tsx', '.js', '.jsx', '.py', '.go', '.java', '.rb', '.php',
 ]);
 
+// Hard-skip directories that should never be scanned regardless of user flags
+// — VCS internals, language toolchain caches, and dependency vendoring. Build
+// output directories (dist, .next, build, etc.) are handled by the configurable
+// resolveIgnorePatterns() layer so `--include-build-output` can override them.
 const SKIP_DIRS = new Set([
-  'node_modules', '.git', 'dist', 'build', '.next', 'out', 'target',
-  'vendor', '__pycache__', '.venv', 'venv', '.tox', 'coverage',
-  '.nyc_output', '.turbo', '.cache', '.parcel-cache', 'bower_components',
+  'node_modules', '.git', 'target', 'vendor', '__pycache__',
+  '.venv', 'venv', '.tox', '.nyc_output', '.parcel-cache', 'bower_components',
 ]);
 
 const MAX_FILE_SIZE = 1_000_000; // 1MB — skip huge files

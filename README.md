@@ -92,6 +92,22 @@ Common options:
 | `--show-all` | — | Show all findings in terminal output (default: top 15) |
 | `--verbose` | — | Show verbose output |
 | `--no-banner` | — | Suppress the ASCII banner |
+| `-w, --workspace <dir>` | — | Scope the scan to a workspace subdir (repeatable) — handy for monorepos |
+| `--baseline <file>` | — | Suppress findings recorded in the baseline; only grade net-new findings |
+| `--update-baseline` | — | Write/refresh the baseline file from the current findings |
+| `--include-build-output` | off | Scan build artifact dirs (`.next`, `dist`, `build`, `.turbo`, …). Off by default to suppress false positives |
+
+By default the scanner excludes common build output and cache directories (`.next/`, `.nuxt/`, `dist/`, `build/`, `.turbo/`, `out/`, `coverage/`, `node_modules/`, `storybook-static/`, `**/__generated__/`). Pass `--include-build-output` to scan them anyway.
+
+Baseline workflow (recommended for first-time PR-gate adoption):
+
+```bash
+# 1. Snapshot existing findings into a baseline you commit to the repo.
+owasp-wtf scan . --baseline owasp-baseline.json --update-baseline
+
+# 2. From now on, the gate fails only on net-new findings.
+owasp-wtf scan . --baseline owasp-baseline.json --fail-on high
+```
 
 Full reference: [`docs/usage.md`](./docs/usage.md).
 
@@ -109,6 +125,10 @@ owasp-wtf fix-plan ./src --agent claude
 
 # Deep scan, write Markdown summary, ignore tests
 owasp-wtf deep --format markdown -o REPORT.md -i "**/*.test.ts,fixtures/**"
+
+# Monorepo — scan only changed workspaces, suppress pre-existing findings
+owasp-wtf scan . --workspace apps/web --workspace packages/shared \
+  --baseline owasp-baseline.json --fail-on high
 
 # Which OSS tools do I have installed?
 owasp-wtf doctor
