@@ -83,7 +83,7 @@ jobs:
             --format sarif \
             --output owasp-wtf.sarif
         env:
-          IGNORE_GLOBS: '**/.next/**,**/dist/**,**/out/**,**/node_modules/**,**/.turbo/**,**/coverage/**,**/.pnpm-store/**,pnpm-lock.yaml'
+          IGNORE_GLOBS: '**/.next/**,**/dist/**,**/out/**,**/node_modules/**,**/.turbo/**,**/coverage/**,**/.pnpm-store/**,pnpm-lock.yaml,**/test/fixtures/**'
         continue-on-error: true
 
       - name: Scan (JSON for summary)
@@ -94,7 +94,7 @@ jobs:
             --format json \
             --output owasp-wtf.json
         env:
-          IGNORE_GLOBS: '**/.next/**,**/dist/**,**/out/**,**/node_modules/**,**/.turbo/**,**/coverage/**,**/.pnpm-store/**,pnpm-lock.yaml'
+          IGNORE_GLOBS: '**/.next/**,**/dist/**,**/out/**,**/node_modules/**,**/.turbo/**,**/coverage/**,**/.pnpm-store/**,pnpm-lock.yaml,**/test/fixtures/**'
         continue-on-error: true
 
       - name: Upload SARIF to GitHub code scanning
@@ -182,7 +182,7 @@ jobs:
           format: sarif
           output: owasp-wtf-action.sarif
           fail-on: ''
-          ignore: '**/.next/**,**/dist/**,**/out/**,**/node_modules/**,**/.turbo/**,**/coverage/**,**/.pnpm-store/**,pnpm-lock.yaml'
+          ignore: '**/.next/**,**/dist/**,**/out/**,**/node_modules/**,**/.turbo/**,**/coverage/**,**/.pnpm-store/**,pnpm-lock.yaml,**/test/fixtures/**'
           install-tools: 'semgrep,gitleaks,trivy'
           upload-sarif: 'true'
           artifact-name: owasp-wtf-action-report
