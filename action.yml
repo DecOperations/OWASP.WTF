@@ -62,6 +62,26 @@ inputs:
     description: 'Token used to install the CLI from GitHub Packages (needs read:packages)'
     required: false
     default: ${{ github.token }}
+  workspace:
+    description: 'Scope the scan to one or more workspace subdirectories (relative to `directory`). Comma- or newline-separated. Empty = scan the whole project root.'
+    required: false
+    default: ''
+  baseline:
+    description: 'Path to a baseline file. Findings already recorded in the baseline are excluded from the report and from --fail-on grading. Commit this file to suppress pre-existing findings on first rollout.'
+    required: false
+    default: ''
+  update-baseline:
+    description: 'Write a fresh baseline file from the current findings and exit success. Use this to (re)generate the snapshot.'
+    required: false
+    default: 'false'
+  include-build-output:
+    description: 'Scan build artifact directories (.next, dist, build, .turbo, coverage, out). Off by default to suppress false positives in Next.js / monorepos.'
+    required: false
+    default: 'false'
+  cache-cli:
+    description: 'Cache the downloaded CLI tarball under ~/.cache/owasp-wtf/. Keeps repeat runs on a self-hosted runner from re-downloading the tarball.'
+    required: false
+    default: 'true'
 
 outputs:
   report-path:
@@ -87,6 +107,7 @@ runs:
       env:
         GH_TOKEN: ${{ inputs.github-token }}
         VERSION_INPUT: ${{ inputs.version }}
+        CACHE_CLI: ${{ inputs.cache-cli }}
       run: |
         # Install the CLI from a GitHub Release tarball asset. This avoids
         # GitHub Packages cross-repo auth limitations: a consumer repo's
@@ -118,30 +139,51 @@ runs:
           tag="cli-v${raw}"
         fi
         version="${tag#cli-v}"
-
-        # Resolve the tarball asset via the releases API so this works on
-        # private repos too (Accept: octet-stream redirects to a signed URL).
-        release_json="$(curl "${api_args[@]}" \
-          "https://api.github.com/repos/DecOperations/OWASP.WTF/releases/tags/${tag}")"
         asset_name="decoperations-owasp-wtf-${version}.tgz"
-        asset_url="$(printf '%s' "$release_json" \
-          | jq -r --arg name "$asset_name" \
-              '.assets[]? | select(.name == $name) | .url')"
-        if [ -z "$asset_url" ]; then
-          echo "::error::Release ${tag} has no asset named ${asset_name}."
-          echo "::error::Older releases may pre-date the tarball-asset rollout — pin a newer version (e.g. version: '0.2.3+') or use version: 'latest'."
-          exit 1
+
+        # Optional local tarball cache. On self-hosted runners with high
+        # PR throughput this avoids ~30s of redundant download per job.
+        cache_dir="${HOME}/.cache/owasp-wtf"
+        cached_tarball="${cache_dir}/${asset_name}"
+        use_cache="false"
+        if [ "${CACHE_CLI:-true}" = "true" ] && [ -f "${cached_tarball}" ]; then
+          echo "Using cached CLI tarball at ${cached_tarball}"
+          use_cache="true"
         fi
 
-        tmp="$(mktemp -d)"
-        dl_args=(-sSfL -H "Accept: application/octet-stream")
-        if [ -n "${GH_TOKEN:-}" ]; then
-          dl_args+=(-H "Authorization: Bearer ${GH_TOKEN}")
+        if [ "${use_cache}" = "true" ]; then
+          npm install -g "${cached_tarball}"
+        else
+          # Resolve the tarball asset via the releases API so this works on
+          # private repos too (Accept: octet-stream redirects to a signed URL).
+          release_json="$(curl "${api_args[@]}" \
+            "https://api.github.com/repos/DecOperations/OWASP.WTF/releases/tags/${tag}")"
+          asset_url="$(printf '%s' "$release_json" \
+            | jq -r --arg name "$asset_name" \
+                '.assets[]? | select(.name == $name) | .url')"
+          if [ -z "$asset_url" ]; then
+            echo "::error::Release ${tag} has no asset named ${asset_name}."
+            echo "::error::Older releases may pre-date the tarball-asset rollout — pin a newer version (e.g. version: '0.2.3+') or use version: 'latest'."
+            exit 1
+          fi
+
+          tmp="$(mktemp -d)"
+          dl_args=(-sSfL -H "Accept: application/octet-stream")
+          if [ -n "${GH_TOKEN:-}" ]; then
+            dl_args+=(-H "Authorization: Bearer ${GH_TOKEN}")
+          fi
+          echo "Downloading ${asset_name} from ${tag}"
+          curl "${dl_args[@]}" -o "$tmp/cli.tgz" "$asset_url"
+          npm install -g "$tmp/cli.tgz"
+
+          if [ "${CACHE_CLI:-true}" = "true" ]; then
+            mkdir -p "${cache_dir}"
+            cp "$tmp/cli.tgz" "${cached_tarball}"
+            echo "Cached tarball to ${cached_tarball}"
+          fi
+          rm -rf "$tmp"
         fi
-        echo "Downloading ${asset_name} from ${tag}"
-        curl "${dl_args[@]}" -o "$tmp/cli.tgz" "$asset_url"
-        npm install -g "$tmp/cli.tgz"
-        rm -rf "$tmp"
+
         owasp-wtf --version
 
     - name: Install OSS scanners
@@ -235,6 +277,10 @@ runs:
         IGNORE: ${{ inputs.ignore }}
         FAIL_ON: ${{ inputs.fail-on }}
         AGENT: ${{ inputs.agent }}
+        WORKSPACE: ${{ inputs.workspace }}
+        BASELINE: ${{ inputs.baseline }}
+        UPDATE_BASELINE: ${{ inputs.update-baseline }}
+        INCLUDE_BUILD_OUTPUT: ${{ inputs.include-build-output }}
       run: |
         set -o pipefail
         args=(
@@ -252,6 +298,23 @@ runs:
         fi
         if [ "$FORMAT" = "fix-plan" ]; then
           args+=(--agent "$AGENT")
+        fi
+        if [ "${INCLUDE_BUILD_OUTPUT:-false}" = "true" ]; then
+          args+=(--include-build-output)
+        fi
+        if [ -n "$BASELINE" ]; then
+          args+=(--baseline "$BASELINE")
+          if [ "${UPDATE_BASELINE:-false}" = "true" ]; then
+            args+=(--update-baseline)
+          fi
+        fi
+        if [ -n "$WORKSPACE" ]; then
+          # Accept comma-, newline-, or whitespace-separated workspace lists.
+          while IFS= read -r ws; do
+            ws="$(echo "$ws" | tr -d '[:space:]')"
+            [ -z "$ws" ] && continue
+            args+=(--workspace "$ws")
+          done < <(echo "$WORKSPACE" | tr ',' '\n')
         fi
 
         echo "::group::owasp-wtf ${args[*]}"

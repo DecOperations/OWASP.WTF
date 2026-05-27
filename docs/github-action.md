@@ -49,6 +49,11 @@ workflow artifact.
 | `artifact-name` | `owasp-wtf-report` | Name for the uploaded artifact |
 | `node-version` | `22` | Node.js version used to run the CLI |
 | `github-token` | `${{ github.token }}` | Token for GitHub Packages install (needs `read:packages`) |
+| `workspace` | — | Scope the scan to one or more workspace subdirs (comma- or newline-separated). Empty = scan the full `directory`. |
+| `baseline` | — | Path to a baseline file. Findings already in the baseline are excluded from the report and from `fail-on` grading. |
+| `update-baseline` | `false` | Write a fresh baseline file from the current findings and exit success. Use to (re)generate the snapshot. |
+| `include-build-output` | `false` | Scan build artifact directories (`.next`, `dist`, `build`, `.turbo`, `coverage`, `out`). Off by default. |
+| `cache-cli` | `true` | Cache the CLI tarball at `~/.cache/owasp-wtf/`. Skips re-download when the same version is already cached (handy on self-hosted runners). |
 
 ## Outputs
 
@@ -139,6 +144,52 @@ steps:
   with:
     directory: apps/api
     ignore: "**/*.test.ts,**/__generated__/**"
+```
+
+### Monorepo — multiple workspaces with a shared baseline
+
+Pass `workspace` to scope a scan to one or more sub-packages. Combine with
+`baseline` so the first rollout suppresses pre-existing findings and the gate
+fails only on net-new ones.
+
+```yaml
+permissions:
+  security-events: write
+  pull-requests: write
+  contents: read
+steps:
+  - uses: actions/checkout@v4
+  - uses: decoperations/owasp.wtf@v1
+    with:
+      mode: scan
+      workspace: |
+        apps/web
+        packages/shared
+      baseline: owasp-baseline.json
+      fail-on: high
+```
+
+To (re)generate the baseline, run the action with `update-baseline: 'true'`
+on a one-off branch and commit the resulting file.
+
+```yaml
+- uses: decoperations/owasp.wtf@v1
+  with:
+    baseline: owasp-baseline.json
+    update-baseline: 'true'
+- run: git add owasp-baseline.json && git commit -m "chore: refresh OWASP baseline" && git push
+```
+
+### Self-hosted runner with high PR cadence (cache the CLI tarball)
+
+`cache-cli: 'true'` is the default. On a persistent self-hosted runner it
+keeps repeated installs to a `cp` rather than a network download. Use
+`'false'` to force a fresh download every run.
+
+```yaml
+- uses: decoperations/owasp.wtf@v1
+  with:
+    cache-cli: 'true'
 ```
 
 ### Deep nightly scan with the full toolchain

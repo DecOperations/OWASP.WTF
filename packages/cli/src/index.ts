@@ -67,6 +67,10 @@ interface ScanOpts {
   showAll?: boolean;
   agent?: string;
   banner?: boolean;
+  includeBuildOutput?: boolean;
+  workspace?: string[];
+  baseline?: string;
+  updateBaseline?: boolean;
 }
 
 interface ScanOptionDefaults {
@@ -100,7 +104,27 @@ function attachScanOptions(cmd: Command, defaults: ScanOptionDefaults = {}): Com
     .option('--agent <agent>', 'For --format=fix-plan: claude, cursor, codex, copilot, generic', 'generic')
     .option('--show-all', 'Show all findings in terminal output (default: top 15)')
     .option('--verbose', 'Verbose output')
-    .option('--no-banner', 'Suppress the ASCII banner');
+    .option('--no-banner', 'Suppress the ASCII banner')
+    .option(
+      '--include-build-output',
+      'Scan build artifact directories (.next, dist, build, .turbo, coverage, out). Off by default to suppress false positives.',
+      false,
+    )
+    .option(
+      '-w, --workspace <dir>',
+      'Scope the scan to a workspace subdirectory (relative to the project root). Repeatable.',
+      (val: string, prev: string[] = []) => prev.concat(val),
+      [] as string[],
+    )
+    .option(
+      '--baseline <file>',
+      'Path to a baseline file. Findings present in the baseline are suppressed from the report and from --fail-on grading.',
+    )
+    .option(
+      '--update-baseline',
+      'Write the current findings to the baseline file and exit success. Use with --baseline.',
+      false,
+    );
 }
 
 async function dispatch(mode: ScanMode, directory: string, opts: ScanOpts): Promise<void> {
@@ -118,6 +142,10 @@ async function dispatch(mode: ScanMode, directory: string, opts: ScanOpts): Prom
     verbose: opts.verbose,
     showAll: opts.showAll,
     agent: opts.agent as 'claude' | 'cursor' | 'codex' | 'copilot' | 'generic' | undefined,
+    includeBuildOutput: opts.includeBuildOutput,
+    workspaces: opts.workspace,
+    baselineFile: opts.baseline,
+    updateBaseline: opts.updateBaseline,
   });
   process.exit(exitCode);
 }
