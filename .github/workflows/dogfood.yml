@@ -75,24 +75,43 @@ jobs:
       - name: Doctor
         run: node packages/cli/dist/index.js doctor || true
 
-      - name: Scan (SARIF)
+      # Pass 1 — SARIF + binding gate (fail-on: high).
+      # If a baseline file exists at the repo root, findings recorded in it
+      # are suppressed from --fail-on grading (see #34). Today the repo is
+      # clean post-#36 Phase 1 so the file is absent and the gate fires on
+      # any new high+ finding.
+      - name: Scan (SARIF, binding gate)
+        id: scan-sarif
         run: |
+          baseline_args=()
+          if [ -f owasp-baseline.json ]; then
+            baseline_args+=(--baseline owasp-baseline.json)
+          fi
           node packages/cli/dist/index.js scan . \
             --no-banner \
             --ignore "$IGNORE_GLOBS" \
             --format sarif \
-            --output owasp-wtf.sarif
+            --output owasp-wtf.sarif \
+            --fail-on high \
+            "${baseline_args[@]}"
         env:
           IGNORE_GLOBS: '**/.next/**,**/dist/**,**/out/**,**/node_modules/**,**/.turbo/**,**/coverage/**,**/.pnpm-store/**,pnpm-lock.yaml,**/test/fixtures/**'
-        continue-on-error: true
 
+      # Pass 2 — JSON for the sticky PR comment. Observe-only so the comment
+      # always lands even when the gate above fired.
       - name: Scan (JSON for summary)
+        if: always()
         run: |
+          baseline_args=()
+          if [ -f owasp-baseline.json ]; then
+            baseline_args+=(--baseline owasp-baseline.json)
+          fi
           node packages/cli/dist/index.js scan . \
             --no-banner \
             --ignore "$IGNORE_GLOBS" \
             --format json \
-            --output owasp-wtf.json
+            --output owasp-wtf.json \
+            "${baseline_args[@]}"
         env:
           IGNORE_GLOBS: '**/.next/**,**/dist/**,**/out/**,**/node_modules/**,**/.turbo/**,**/coverage/**,**/.pnpm-store/**,pnpm-lock.yaml,**/test/fixtures/**'
         continue-on-error: true

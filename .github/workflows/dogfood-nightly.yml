@@ -1,0 +1,139 @@
+name: Dogfood (nightly deep scan)
+
+# Nightly deep scan on main: native + semgrep + gitleaks + trivy + syft +
+# grype + hadolint. Catches newly-disclosed CVEs in already-committed deps
+# within 24h, and gives us a daily SARIF refresh on the Security tab.
+#
+# Tracked by:
+#   - https://github.com/DecOperations/OWASP.WTF/issues/33 (PeerSpeak rollout)
+#   - https://github.com/DecOperations/OWASP.WTF/issues/36 (vuln-dep triage)
+
+on:
+  schedule:
+    # 09:00 UTC — early enough to land in the morning standup,
+    # off-peak GitHub Actions queue.
+    - cron: '0 9 * * *'
+  workflow_dispatch:
+
+concurrency:
+  group: dogfood-nightly
+  cancel-in-progress: false
+
+permissions:
+  contents: read
+  security-events: write
+  actions: read
+
+jobs:
+  deep-scan:
+    name: Deep self-scan (nightly)
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - uses: pnpm/action-setup@v4
+      - uses: actions/setup-node@v4
+        with:
+          node-version: '22'
+          cache: 'pnpm'
+          registry-url: 'https://npm.pkg.github.com'
+          scope: '@decoperations'
+
+      - name: Install dependencies
+        run: pnpm install --frozen-lockfile
+        env:
+          NODE_AUTH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+
+      - name: Build CLI
+        run: pnpm build
+
+      - name: Install OSS scanners (semgrep, gitleaks, trivy, syft, grype, hadolint)
+        run: |
+          set -euo pipefail
+          python3 -m pip install --user semgrep
+          echo "$HOME/.local/bin" >> "$GITHUB_PATH"
+
+          os="$(uname -s | tr '[:upper:]' '[:lower:]')"
+          case "$(uname -m)" in
+            x86_64|amd64) arch="x64" ;;
+            arm64|aarch64) arch="arm64" ;;
+            *) echo "::error::Unsupported arch: $(uname -m)"; exit 1 ;;
+          esac
+
+          gl_tag="$(curl -sSfL -H 'Accept: application/vnd.github+json' \
+            https://api.github.com/repos/gitleaks/gitleaks/releases/latest \
+            | grep -oE '"tag_name":\s*"[^"]+"' | head -n1 \
+            | sed -E 's/.*"tag_name":\s*"([^"]+)".*/\1/')"
+          gl_version="${gl_tag#v}"
+          tmp="$(mktemp -d)"
+          curl -sSfL \
+            "https://github.com/gitleaks/gitleaks/releases/download/${gl_tag}/gitleaks_${gl_version}_${os}_${arch}.tar.gz" \
+            -o "$tmp/gitleaks.tar.gz"
+          tar -xzf "$tmp/gitleaks.tar.gz" -C "$tmp" gitleaks
+          sudo install -m 0755 "$tmp/gitleaks" /usr/local/bin/gitleaks
+          rm -rf "$tmp"
+
+          curl -sSfL https://raw.githubusercontent.com/aquasecurity/trivy/main/contrib/install.sh \
+            | sh -s -- -b /usr/local/bin
+          curl -sSfL https://raw.githubusercontent.com/anchore/syft/main/install.sh \
+            | sh -s -- -b /usr/local/bin
+          curl -sSfL https://raw.githubusercontent.com/anchore/grype/main/install.sh \
+            | sh -s -- -b /usr/local/bin
+          sudo curl -sSfL -o /usr/local/bin/hadolint \
+            https://github.com/hadolint/hadolint/releases/latest/download/hadolint-Linux-x86_64
+          sudo chmod +x /usr/local/bin/hadolint
+
+      - name: Doctor
+        run: node packages/cli/dist/index.js doctor || true
+
+      # Deep mode: full toolchain. fail-on stays empty so we get the full
+      # picture even when something fires; main is the only branch this runs
+      # on so there's no PR to block.
+      - name: Deep scan (SARIF)
+        run: |
+          baseline_args=()
+          if [ -f owasp-baseline.json ]; then
+            baseline_args+=(--baseline owasp-baseline.json)
+          fi
+          node packages/cli/dist/index.js deep . \
+            --no-banner \
+            --ignore "$IGNORE_GLOBS" \
+            --format sarif \
+            --output owasp-wtf-deep.sarif \
+            "${baseline_args[@]}"
+        env:
+          IGNORE_GLOBS: '**/.next/**,**/dist/**,**/out/**,**/node_modules/**,**/.turbo/**,**/coverage/**,**/.pnpm-store/**,pnpm-lock.yaml,**/test/fixtures/**'
+        continue-on-error: true
+
+      - name: Deep scan (JSON)
+        if: always()
+        run: |
+          baseline_args=()
+          if [ -f owasp-baseline.json ]; then
+            baseline_args+=(--baseline owasp-baseline.json)
+          fi
+          node packages/cli/dist/index.js deep . \
+            --no-banner \
+            --ignore "$IGNORE_GLOBS" \
+            --format json \
+            --output owasp-wtf-deep.json \
+            "${baseline_args[@]}"
+        env:
+          IGNORE_GLOBS: '**/.next/**,**/dist/**,**/out/**,**/node_modules/**,**/.turbo/**,**/coverage/**,**/.pnpm-store/**,pnpm-lock.yaml,**/test/fixtures/**'
+        continue-on-error: true
+
+      - name: Upload SARIF to GitHub code scanning
+        if: ${{ always() && hashFiles('owasp-wtf-deep.sarif') != '' }}
+        uses: github/codeql-action/upload-sarif@v3
+        with:
+          sarif_file: owasp-wtf-deep.sarif
+          category: owasp-wtf-deep
+
+      - name: Upload reports
+        if: always()
+        uses: actions/upload-artifact@v4
+        with:
+          name: owasp-wtf-nightly-deep
+          path: |
+            owasp-wtf-deep.sarif
+            owasp-wtf-deep.json
+          retention-days: 30

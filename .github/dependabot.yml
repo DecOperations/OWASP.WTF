@@ -1,0 +1,102 @@
+# Dependabot configuration for OWASP.WTF.
+# Keeps CLI + web + tooling dependencies current so trivy/grype SCA findings
+# get filed as PRs as soon as upstream ships a patch.
+#
+# Tracked by: https://github.com/DecOperations/OWASP.WTF/issues/36
+
+version: 2
+
+updates:
+  # Root workspace — covers tooling devDependencies and any new pnpm overrides.
+  - package-ecosystem: "npm"
+    directory: "/"
+    schedule:
+      interval: "weekly"
+      day: "monday"
+      time: "09:00"
+      timezone: "Etc/UTC"
+    open-pull-requests-limit: 5
+    labels: ["dependencies", "area:tooling"]
+    commit-message:
+      prefix: "chore(deps)"
+      include: "scope"
+    groups:
+      semantic-release:
+        patterns:
+          - "@semantic-release/*"
+          - "semantic-release*"
+          - "conventional-changelog*"
+      lint-and-format:
+        patterns:
+          - "@commitlint/*"
+          - "husky"
+          - "turbo"
+          - "typescript"
+
+  # CLI package — the published artifact. Treat patch + minor as automerge-ready,
+  # major bumps as review-required (Commander/Chalk majors tend to break ESM).
+  - package-ecosystem: "npm"
+    directory: "/packages/cli"
+    schedule:
+      interval: "weekly"
+      day: "monday"
+      time: "09:00"
+      timezone: "Etc/UTC"
+    open-pull-requests-limit: 5
+    labels: ["dependencies", "area:cli"]
+    commit-message:
+      prefix: "chore(deps,cli)"
+      include: "scope"
+    ignore:
+      - dependency-name: "*"
+        update-types: ["version-update:semver-major"]
+
+  # Web app — the surface that owns the Next.js / React / Tailwind stack.
+  # This is where the bulk of #36's SCA findings came from. Keep majors
+  # under review (Next.js majors are non-trivial).
+  - package-ecosystem: "npm"
+    directory: "/apps/web"
+    schedule:
+      interval: "weekly"
+      day: "monday"
+      time: "09:00"
+      timezone: "Etc/UTC"
+    open-pull-requests-limit: 5
+    labels: ["dependencies", "area:web"]
+    commit-message:
+      prefix: "chore(deps,web)"
+      include: "scope"
+    groups:
+      next-stack:
+        patterns:
+          - "next"
+          - "react"
+          - "react-dom"
+          - "@types/react*"
+      tailwind-stack:
+        patterns:
+          - "tailwindcss"
+          - "@tailwindcss/*"
+          - "postcss"
+    ignore:
+      - dependency-name: "next"
+        update-types: ["version-update:semver-major"]
+      - dependency-name: "react"
+        update-types: ["version-update:semver-major"]
+      - dependency-name: "react-dom"
+        update-types: ["version-update:semver-major"]
+
+  # GitHub Actions — keeps the composite action's pinned versions current
+  # (codeql-action, setup-node, pnpm/action-setup, upload-artifact, sticky-comment).
+  - package-ecosystem: "github-actions"
+    directory: "/"
+    schedule:
+      interval: "weekly"
+      day: "monday"
+      time: "09:00"
+      timezone: "Etc/UTC"
+    open-pull-requests-limit: 3
+    labels: ["dependencies", "area:ci"]
+    commit-message:
+      prefix: "chore(deps,actions)"
+      include: "scope"
