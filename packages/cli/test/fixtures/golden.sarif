@@ -1,0 +1,369 @@
+{
+  "$schema": "https://raw.githubusercontent.com/oasis-tcs/sarif-spec/master/Schemata/sarif-schema-2.1.0.json",
+  "version": "2.1.0",
+  "runs": [
+    {
+      "tool": {
+        "driver": {
+          "name": "owasp-wtf",
+          "informationUri": "https://owasp.wtf",
+          "version": "2.0.0",
+          "rules": [
+            {
+              "id": "native:A03-SQL-INJECTION",
+              "name": "SQL Injection",
+              "shortDescription": {
+                "text": "SQL Injection"
+              },
+              "fullDescription": {
+                "text": "SQL query uses template literal interpolation, which is vulnerable to injection."
+              },
+              "helpUri": "https://owasp.org/Top10/"
+            },
+            {
+              "id": "native:A03-COMMAND-INJECTION",
+              "name": "Command Injection",
+              "shortDescription": {
+                "text": "Command Injection"
+              },
+              "fullDescription": {
+                "text": "exec() with template literal interpolation. Unsanitized input in command execution enables OS command injection."
+              },
+              "helpUri": "https://owasp.org/Top10/"
+            },
+            {
+              "id": "native:A03-EVAL",
+              "name": "Dangerous eval() Usage",
+              "shortDescription": {
+                "text": "Dangerous eval() Usage"
+              },
+              "fullDescription": {
+                "text": "eval() executes arbitrary code. If any input is user-controlled, this enables code injection."
+              },
+              "helpUri": "https://owasp.org/Top10/"
+            },
+            {
+              "id": "native:A03-XSS",
+              "name": "Cross-Site Scripting (XSS)",
+              "shortDescription": {
+                "text": "Cross-Site Scripting (XSS)"
+              },
+              "fullDescription": {
+                "text": "Direct innerHTML assignment can execute injected scripts."
+              },
+              "helpUri": "https://owasp.org/Top10/"
+            },
+            {
+              "id": "native:A03-PATH-TRAVERSAL",
+              "name": "Path Traversal",
+              "shortDescription": {
+                "text": "Path Traversal"
+              },
+              "fullDescription": {
+                "text": "User-supplied input used in file path without visible sanitization. May allow path traversal (../)."
+              },
+              "helpUri": "https://owasp.org/Top10/"
+            },
+            {
+              "id": "native:A01-IDOR",
+              "name": "Potential IDOR",
+              "shortDescription": {
+                "text": "Potential IDOR"
+              },
+              "fullDescription": {
+                "text": "Database record accessed directly using user-supplied ID without visible ownership validation."
+              },
+              "helpUri": "https://owasp.org/Top10/"
+            }
+          ]
+        }
+      },
+      "results": [
+        {
+          "ruleId": "native:A03-SQL-INJECTION",
+          "level": "error",
+          "message": {
+            "text": "SQL query uses template literal interpolation, which is vulnerable to injection."
+          },
+          "properties": {
+            "severity": "critical",
+            "confidence": "medium",
+            "cwe": [
+              "CWE-89"
+            ],
+            "cve": [],
+            "owasp": [
+              "A03:2021-Injection"
+            ],
+            "sourceTool": "native",
+            "confirmedBy": [
+              "native"
+            ],
+            "remediation": "Use parameterized queries instead of template literals for SQL. E.g., db.query(\"SELECT * FROM users WHERE id = ?\", [userId])"
+          },
+          "partialFingerprints": {
+            "owaspWtf": "f1b76f019f8e1b41"
+          },
+          "locations": [
+            {
+              "physicalLocation": {
+                "artifactLocation": {
+                  "uri": "src/a03-injection.ts"
+                },
+                "region": {
+                  "startLine": 19,
+                  "endLine": 19,
+                  "startColumn": 3
+                }
+              }
+            }
+          ]
+        },
+        {
+          "ruleId": "native:A03-COMMAND-INJECTION",
+          "level": "error",
+          "message": {
+            "text": "exec() with template literal interpolation. Unsanitized input in command execution enables OS command injection."
+          },
+          "properties": {
+            "severity": "critical",
+            "confidence": "medium",
+            "cwe": [
+              "CWE-78"
+            ],
+            "cve": [],
+            "owasp": [
+              "A03:2021-Injection"
+            ],
+            "sourceTool": "native",
+            "confirmedBy": [
+              "native"
+            ],
+            "remediation": "Use execFile() or spawn() with an array of arguments instead of exec() with a string. Never interpolate user input into shell commands."
+          },
+          "partialFingerprints": {
+            "owaspWtf": "155698d3e1a79946"
+          },
+          "locations": [
+            {
+              "physicalLocation": {
+                "artifactLocation": {
+                  "uri": "src/a03-injection.ts"
+                },
+                "region": {
+                  "startLine": 19,
+                  "endLine": 19,
+                  "startColumn": 3
+                }
+              }
+            }
+          ]
+        },
+        {
+          "ruleId": "native:A03-SQL-INJECTION",
+          "level": "error",
+          "message": {
+            "text": "SQL query uses template literal interpolation, which is vulnerable to injection."
+          },
+          "properties": {
+            "severity": "critical",
+            "confidence": "medium",
+            "cwe": [
+              "CWE-89"
+            ],
+            "cve": [],
+            "owasp": [
+              "A03:2021-Injection"
+            ],
+            "sourceTool": "native",
+            "confirmedBy": [
+              "native"
+            ],
+            "remediation": "Use parameterized queries instead of template literals for SQL. E.g., db.query(\"SELECT * FROM users WHERE id = ?\", [userId])"
+          },
+          "partialFingerprints": {
+            "owaspWtf": "4a75c555911ffed7"
+          },
+          "locations": [
+            {
+              "physicalLocation": {
+                "artifactLocation": {
+                  "uri": "src/a03-injection.ts"
+                },
+                "region": {
+                  "startLine": 24,
+                  "endLine": 24,
+                  "startColumn": 20
+                }
+              }
+            }
+          ]
+        },
+        {
+          "ruleId": "native:A03-EVAL",
+          "level": "error",
+          "message": {
+            "text": "eval() executes arbitrary code. If any input is user-controlled, this enables code injection."
+          },
+          "properties": {
+            "severity": "high",
+            "confidence": "medium",
+            "cwe": [
+              "CWE-95"
+            ],
+            "cve": [],
+            "owasp": [
+              "A03:2021-Injection"
+            ],
+            "sourceTool": "native",
+            "confirmedBy": [
+              "native"
+            ],
+            "remediation": "Avoid eval() and new Function(). Use JSON.parse() for data, or a safe expression parser for computed values."
+          },
+          "partialFingerprints": {
+            "owaspWtf": "559b162d09d07f59"
+          },
+          "locations": [
+            {
+              "physicalLocation": {
+                "artifactLocation": {
+                  "uri": "src/a03-injection.ts"
+                },
+                "region": {
+                  "startLine": 14,
+                  "endLine": 14,
+                  "startColumn": 10
+                }
+              }
+            }
+          ]
+        },
+        {
+          "ruleId": "native:A03-XSS",
+          "level": "error",
+          "message": {
+            "text": "Direct innerHTML assignment can execute injected scripts."
+          },
+          "properties": {
+            "severity": "high",
+            "confidence": "medium",
+            "cwe": [
+              "CWE-79"
+            ],
+            "cve": [],
+            "owasp": [
+              "A03:2021-Injection"
+            ],
+            "sourceTool": "native",
+            "confirmedBy": [
+              "native"
+            ],
+            "remediation": "Use textContent instead of innerHTML, or sanitize with DOMPurify: element.innerHTML = DOMPurify.sanitize(value)"
+          },
+          "partialFingerprints": {
+            "owaspWtf": "63e18759ab5cfe34"
+          },
+          "locations": [
+            {
+              "physicalLocation": {
+                "artifactLocation": {
+                  "uri": "src/a03-injection.ts"
+                },
+                "region": {
+                  "startLine": 29,
+                  "endLine": 29,
+                  "startColumn": 33
+                }
+              }
+            }
+          ]
+        },
+        {
+          "ruleId": "native:A03-PATH-TRAVERSAL",
+          "level": "error",
+          "message": {
+            "text": "User-supplied input used in file path without visible sanitization. May allow path traversal (../)."
+          },
+          "properties": {
+            "severity": "high",
+            "confidence": "medium",
+            "cwe": [],
+            "cve": [],
+            "owasp": [
+              "A03:2021-Injection"
+            ],
+            "sourceTool": "native",
+            "confirmedBy": [
+              "native"
+            ],
+            "remediation": "Validate and sanitize file paths. Use path.normalize() and verify the resolved path is within the expected directory. Reject paths containing \"..\"."
+          },
+          "partialFingerprints": {
+            "owaspWtf": "85e5ea3066266cac"
+          },
+          "locations": [
+            {
+              "physicalLocation": {
+                "artifactLocation": {
+                  "uri": "src/a03-injection.ts"
+                },
+                "region": {
+                  "startLine": 34,
+                  "endLine": 34,
+                  "startColumn": 10
+                }
+              }
+            }
+          ]
+        },
+        {
+          "ruleId": "native:A01-IDOR",
+          "level": "warning",
+          "message": {
+            "text": "Database record accessed directly using user-supplied ID without visible ownership validation."
+          },
+          "properties": {
+            "severity": "medium",
+            "confidence": "medium",
+            "cwe": [
+              "CWE-639"
+            ],
+            "cve": [],
+            "owasp": [
+              "A01:2021-Broken-Access-Control"
+            ],
+            "sourceTool": "native",
+            "confirmedBy": [
+              "native"
+            ],
+            "remediation": "Verify the requesting user has permission to access this record. Add ownership checks (e.g., where: { id, userId: req.user.id })."
+          },
+          "partialFingerprints": {
+            "owaspWtf": "dcc56a445a7d8e46"
+          },
+          "locations": [
+            {
+              "physicalLocation": {
+                "artifactLocation": {
+                  "uri": "src/a03-injection.ts"
+                },
+                "region": {
+                  "startLine": 24,
+                  "endLine": 24,
+                  "startColumn": 40
+                }
+              }
+            }
+          ]
+        }
+      ],
+      "invocations": [
+        {
+          "executionSuccessful": false,
+          "startTimeUtc": "2026-05-28T00:09:51.652Z"
+        }
+      ]
+    }
+  ]
+}
