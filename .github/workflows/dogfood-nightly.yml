@@ -121,6 +121,11 @@ jobs:
           IGNORE_GLOBS: '**/.next/**,**/dist/**,**/out/**,**/node_modules/**,**/.turbo/**,**/coverage/**,**/.pnpm-store/**,pnpm-lock.yaml,**/test/fixtures/**'
         continue-on-error: true
 
+      # See dogfood.yml — schema-validate before upload. Tracked by #17.
+      - name: Validate SARIF schema
+        if: ${{ always() && hashFiles('owasp-wtf-deep.sarif') != '' }}
+        run: node packages/cli/scripts/validate-sarif.mjs owasp-wtf-deep.sarif
+
       - name: Upload SARIF to GitHub code scanning
         if: ${{ always() && hashFiles('owasp-wtf-deep.sarif') != '' }}
         uses: github/codeql-action/upload-sarif@v4

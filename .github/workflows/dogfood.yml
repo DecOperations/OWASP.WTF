@@ -116,6 +116,14 @@ jobs:
           IGNORE_GLOBS: '**/.next/**,**/dist/**,**/out/**,**/node_modules/**,**/.turbo/**,**/coverage/**,**/.pnpm-store/**,pnpm-lock.yaml,**/test/fixtures/**'
         continue-on-error: true
 
+      # Schema-validate the emitted SARIF BEFORE upload. Malformed SARIF
+      # is silently dropped by GitHub code scanning (shows 0 findings, no
+      # error) — exactly the failure mode this gate exists to prevent.
+      # Tracked by #17.
+      - name: Validate SARIF schema
+        if: ${{ always() && hashFiles('owasp-wtf.sarif') != '' }}
+        run: node packages/cli/scripts/validate-sarif.mjs owasp-wtf.sarif
+
       - name: Upload SARIF to GitHub code scanning
         if: ${{ always() && hashFiles('owasp-wtf.sarif') != '' }}
         uses: github/codeql-action/upload-sarif@v4
