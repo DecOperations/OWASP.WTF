@@ -27,7 +27,7 @@ jobs:
     name: Self-scan (CLI from source)
     runs-on: ubuntu-latest
     steps:
-      - uses: actions/checkout@v4
+      - uses: actions/checkout@v6
       - uses: pnpm/action-setup@v6
       - uses: actions/setup-node@v6
         with:
@@ -201,7 +201,7 @@ jobs:
     # from main — tracked in issue #28.
     if: false
     steps:
-      - uses: actions/checkout@v4
+      - uses: actions/checkout@v6
       - name: Run OWASP.WTF action against this repo
         uses: ./
         with:
