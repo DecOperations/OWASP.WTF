@@ -1,18 +1,43 @@
-# UnicornDev Agent Runbook
+# xCoder Agent Runbook
 
-> Quick reference for consistent, reliable behavior. Consult this at every phase.
+> Quick reference for consistent, reliable behavior under xCoder enforcement. Consult this at every phase.
 
 ---
 
 ## Session Start Checklist
 
 ```
-□ Load .claude/settings.json
+□ Load .xcoder/guidelines.yaml
 □ Load .claude/knowledge/index.json
+□ Run xc boot for current context
 □ Note project type and current state
 □ Check for pending tasks
 □ Initialize meta-cognition monitoring
 ```
+
+---
+
+## xCoder Invariants (15)
+
+Every action is gated by the 15-invariant contract. Violations are blocked at the kernel level.
+
+| ID | Invariant | Trigger |
+|----|-----------|---------|
+| I-1 | No edits on integration branch | Edit / Write / MultiEdit / NotebookEdit |
+| I-2 | No commit/push on integration | git commit / git push |
+| I-3 | Issue exists before branch | Branch creation |
+| I-4 | Branch matches prefix | Branch creation |
+| I-5 | Spec exists if required | Commit |
+| I-6 | Typecheck passes before commit | git commit |
+| I-7 | Conventional commit format | git commit |
+| I-8 | Commit refs tracking issue | git commit |
+| I-9 | PR opened before "done" | Session end |
+
+Bypass any invariant with named, logged escapes:
+- `XCODER_ALLOW_INTEGRATION_EDIT=1`
+- `XCODER_SKIP_QA_GATE=1`
+- `XCODER_SKIP_ISSUE_REF=1`
+- `XCODER_AUTO_PR=1`
 
 ---
 
@@ -152,6 +177,22 @@ RED (stop):
   ✗ No clear next action
   → Full reflection required
 ```
+
+---
+
+## xCoder Tool Reference
+
+| Command | Purpose |
+|---------|---------|
+| `xc boot` | Print project context and flow state |
+| `xc doctor` | Check configuration health |
+| `xc flow status` | Show current phase and acceptance |
+| `xc flow invariants` | Print the 15-invariant contract |
+| `xc qa typecheck` | Run typecheck and cache verdict |
+| `xc qa test` | Run tests and cache verdict |
+| `xc qa lint` | Run linter and cache verdict |
+| `xc qa show` | Display current verdicts |
+| `xc i` | Start interactive coding session |
 
 ---
 
@@ -309,11 +350,12 @@ DON'T ASK when:
 
 ### Log Location
 ```
+.xcoder/flow-events.jsonl   # Flow engine events (audit trail)
 .claude/logs/
-├─ session-{date}-{id}.jsonl   # Session events
-├─ reflections.jsonl           # Reflection events
-├─ improvements-queue.jsonl    # Queued improvements
-└─ reviews/                    # Post-task reviews
+  ├─ session-{date}-{id}.jsonl   # Session events
+  ├─ reflections.jsonl           # Reflection events
+  ├─ improvements-queue.jsonl    # Queued improvements
+  └─ reviews/                    # Post-task reviews
 ```
 
 ---
@@ -356,3 +398,4 @@ DON'T ASK when:
 3. **Learn and improve** - Every struggle is a learning opportunity
 4. **When in doubt, stop** - Pausing beats failing forward
 5. **Simplest path first** - Complexity is earned, not assumed
+6. **Mechanism, not vibes** - The guardrails are in the kernel, not the prompt

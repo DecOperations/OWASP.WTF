@@ -1,0 +1,96 @@
+# xCoder Guidelines Override — OWASP.WTF Monorepo
+# This file pins inferred rules to match our commitlint standards and security practices.
+# Priority: guidelines.yaml > guidelines.cache.json > defaults
+#
+# Run `xc flow guidelines refresh` to regenerate the cache after changing this file.
+
+specify:
+  # Specs are mandatory for all non-chore/non-docs work
+  specRequired: true
+  # Spec files live in specs/ and docs/
+  specPath:
+    - "specs/"
+    - "docs/"
+  # Spec filename pattern: {issue-number}-{slug}.md
+  specPattern: "*.md"
+
+branched:
+  # Branch off main (trunk-based development)
+  off: main
+  # Conventional branch prefixes (matches commitlint.config.cjs)
+  prefix:
+    - "feat/"
+    - "fix/"
+    - "docs/"
+    - "style/"
+    - "refactor/"
+    - "perf/"
+    - "test/"
+    - "chore/"
+  # Branch naming: {prefix}{issue-number}-{slug}
+  # Example: feat/142-add-a10-logging-scanner
+  namingPattern: "{prefix}{issue}-{slug}"
+
+commit:
+  # Enforce conventional commits (matches @commitlint/config-conventional)
+  conventional: true
+  # Allowed types (from commitlint.config.cjs)
+  types:
+    - feat
+    - fix
+    - docs
+    - style
+    - refactor
+    - perf
+    - test
+    - chore
+    - ci
+    - build
+    - revert
+  # Commit message must reference a tracking issue
+  requireIssueRef: true
+  # Accepted issue reference patterns
+  issueRefPatterns:
+    - "#\\d+"
+    - "closes #\\d+"
+    - "fixes #\\d+"
+    - "resolves #\\d+"
+    - "issue \\d+"
+  # Do not allow empty commits
+  allowEmpty: false
+
+qa:
+  # Typecheck command (uses turborepo)
+  typecheck: "pnpm run typecheck"
+  # Test command (uses turborepo)
+  test: "pnpm run test"
+  # Lint command (uses turborepo)
+  lint: "pnpm run lint"
+  # E2E test command (optional, run manually)
+  e2e: "pnpm run test:e2e"
+  # Verdict cache TTL in minutes (default: 5)
+  verdictTtlMinutes: 5
+
+# Workflow behavior
+workflow:
+  # Commit directly to integration branch is FORBIDDEN
+  # (对齐 with I-1 and I-2 invariants)
+  commitDirectly: false
+
+  # One commit per logical task
+  commitPerTask: true
+
+  # Create a PR before considering work "done"
+  requirePr: true
+
+  # QA loop settings
+  qaLoop:
+    enabled: true
+    testLocally: true
+    verifySpec: true
+    diffReport: true
+
+# xCoder configuration for this project
+# xCoder runs the 15-invariant SWE flow engine in this repo.
+# Docs: https://xcoder.wtf/docs
+# CLI: xc boot, xc doctor, xc flow status

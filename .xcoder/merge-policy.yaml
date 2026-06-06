@@ -1,0 +1,159 @@
+# xCoder Merge Gate Policy — OWASP.WTF Monorepo
+# Zonal enforcement for the AI-powered OWASP security auditing platform.
+#
+# This file is TRACKED in git (do not gitignore). It defines the security posture
+# for code merging based on file paths and change shapes.
+#
+# Security principle: The OWASP rule engine (packages/cli/src/core/) is kernel.
+# Any change there can affect how ALL security audits run. It always requires
+# human review. Application/UI changes can pass the gate automatically.
+
+zones:
+  # KERNEL: Security rule engine, adapters, and orchestration logic.
+  # Any change here affects the correctness of OWASP scanning.
+  # Strength: ALWAYS human review. No auto-merge.
+  kernel:
+    paths:
+      - "packages/cli/src/core/**"
+      - "packages/cli/src/orchestrator.ts"
+      - "packages/cli/src/adapters/**"
+      - "packages/cli/src/types.ts"
+      - "packages/cli/src/core/score.ts"
+      - "packages/cli/src/core/defaults.ts"
+      - "packages/cli/src/core/owasp-map.ts"
+      - "packages/cli/src/core/baseline.ts"
+      - "packages/cli/src/core/normalize.ts"
+    require: human-review
+    rationale: "Security-critical: changes affect all OWASP audit results"
+
+  # INFRA: Build system, CI/CD, release automation.
+  # Changes here can break the entire monorepo.
+  # Strength: Gate pass OR human review.
+  infra:
+    paths:
+      - ".github/**"
+      - "scripts/**"
+      - "turbo.json"
+      - "tsconfig.base.json"
+      - "pnpm-workspace.yaml"
+      - "action.yml"
+      - "packages/cli/tsup.config.ts"
+    require: gate-pass-or-human
+    rationale: "Infrastructure changes affect build and deployment"
+
+  # BUSINESS: Application code, API routes, UI components.
+  # Standard feature work. Can auto-pass if gate is green.
+  # Strength: Gate pass.
+  business:
+    paths:
+      - "apps/**"
+      - "packages/*/src/app/**"
+      - "packages/*/src/components/**"
+      - "packages/*/src/api/**"
+    require: gate-pass
+    rationale: "Application logic: standard feature work"
+
+  # TESTS: Test suites and fixtures.
+  # Adding/updating tests should not block on human review.
+  # Strength: Gate pass.
+  tests:
+    paths:
+      - "**/*.test.ts"
+      - "**/*.spec.ts"
+      - "**/*.e2e.ts"
+      - "**/test/**"
+      - "packages/cli/test/**"
+    require: gate-pass
+    rationale: "Test changes: verify with gate only"
+
+  # DOCS: Documentation, specs, READMEs.
+  # Lowest risk. Auto-pass.
+  # Strength: Gate pass.
+  docs:
+    paths:
+      - "docs/**"
+      - "specs/**"
+      - "**/*.md"
+      - "README.md"
+      - "CHANGELOG.md"
+      - "CONTRIBUTING.md"
+      - "ROADMAP.md"
+    require: gate-pass
+    rationale: "Documentation changes only"
+
+# Change shapes map commit types to required evidence.
+# The merge-gate analyzer collects this evidence automatically.
+shapes:
+  # Refactoring: must show scope match and delta calibration
+  refactor:
+    evidence:
+      - scope
+      - zone
+      - calibrate-delta
+
+  # Feature: full evidence including OWASP rule validation
+  feature:
+    evidence:
+      - scope
+      - zone
+      - owasp
+      - preview-smoke
+      - visual-diff
+
+  # Fix: show what broke and how it was fixed
+  fix:
+    evidence:
+      - scope
+      - zone
+      - calibrate-delta
+
+  # Chore: minimal evidence
+  chore:
+    evidence:
+      - scope
+      - zone
+
+  # Docs: scope only
+  docs:
+    evidence:
+      - scope
+
+  # Test: scope and zone
+  test:
+    evidence:
+      - scope
+      - zone
+
+# Verdict thresholds.
+# The gate computes a verdict score; these thresholds determine pass/fail.
+verdicts:
+  thresholds:
+    # Minimum scope match confidence (0.0 - 1.0)
+    minScopeMatch: 0.85
+
+    # Maximum number of findings allowed for auto-pass
+    maxFindings: 5
+
+    # Maximum number of kernel-zone changes allowed without human review
+    # (0 means ANY kernel change requires human review)
+    maxKernelChanges: 0
+
+    # Maximum lines changed in a single zone before escalation
+    maxZoneLines: 200
+
+  # Auto-merge settings (for autopilot mode, post-v1)
+  autoMerge:
+    # Whether to auto-merge gate-pass PRs in non-kernel zones
+    enabled: false
+
+    # Require all status checks to pass before auto-merge
+    requireChecksPass: true
+
+    # Exclude these shapes from auto-merge even if gate passes
+    excludeShapes:
+      - feature
+
+    # Never auto-merge if these zones are touched
+    excludeZones:
+      - kernel
+      - infra
