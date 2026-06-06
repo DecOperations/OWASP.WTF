@@ -12,6 +12,7 @@ const SUPPORTED_EXTENSIONS = new Set([
 const SKIP_DIRS = new Set([
   'node_modules', '.git', 'target', 'vendor', '__pycache__',
   '.venv', 'venv', '.tox', '.nyc_output', '.parcel-cache', 'bower_components',
+  '.opencode', '.claude',
 ]);
 
 const MAX_FILE_SIZE = 1_000_000; // 1MB — skip huge files
