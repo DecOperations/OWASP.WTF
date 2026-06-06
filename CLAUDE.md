@@ -4,35 +4,48 @@
 
 ---
 
-## 🦄 UnicornDev Framework
+## ⚡ xCoder Framework
 
-This project uses UnicornDev enforcement for consistent, high-quality development.
+This project uses **xCoder** (v0.1.0-alpha.0) for deterministic, kernel-level SWE agent enforcement.
 
-**Version:** 1.2.2
-**Docs:** `.claude/RUNBOOK.md` (quick reference)
+**Docs:** https://xcoder.wtf/docs  
+**Repo:** https://github.com/DecOperations/xCoder.WTF  
+**CLI:** `xc` / `xcoder`
 
-### Standard Workflow
+### Philosophy
+
+> **Mechanism, not vibes.** Guardrails are in the kernel, not the prompt context. The LLM cannot "forget" or override them.
+
+xCoder intercepts every tool call at the PreToolUse/Stop layer. Exit code 2 = blocked. There is no "I forgot."
+
+### Standard Workflow (SDLC)
 
 ```
-RECEIVE → CLASSIFY → EXECUTE → VERIFY → RESPOND
-    │         │          │         │
-    │         │          ▼         │
-    │         │    CHECKPOINT ◄────┘ (every 10 actions)
-    │         │          │
-    │         ▼          ▼
-    │    [complexity]  [if stuck]
-    │     SCALING      REFLECT → IMPROVE
-    └─────────────────────────────────────► (loop)
+IDLE → SPECIFY → PRIORITIZE → SCOPED → BRANCHED → QA → MAINTAIN
+         ↑          │           │          │       │      │
+         │          └───────────┴──────────┘       │      │
+         │                                          │      │
+         └──── (policy blocks on bad transitions) ──┘      │
+                                                            │
+   I-1 / I-2: no edits on integration branch               │
+   I-3: tracking issue required                            │
+   I-4: branch prefix must match                           │
+   I-6: typecheck must pass                                │
+   I-7: conventional commit format                         │
+   I-8: commit must reference issue                         │
+   I-9: PR required before "done"                          │
 ```
 
 ### Key Files (Read These)
 
 | File | Purpose |
 |------|---------|
-| `.claude/RUNBOOK.md` | Quick reference for all behaviors |
-| `.claude/settings.json` | Project-specific configuration |
-| `.claude/knowledge/index.json` | What technologies are known |
-| `.claude/logs/` | Session tracking and insights |
+| `.xcoder/guidelines.yaml` | Monorepo-specific workflow rules |
+| `.xcoder/merge-policy.yaml` | Merge gate zonal enforcement |
+| `.opencode/plugins/xcoder.ts` | OpenCode GUI standalone plugin (558 lines, zero deps) |
+| `.claude/settings.json` | Project-specific agent configuration |
+| `.claude/knowledge/index.json` | Known technologies registry |
+| `docs/xcoder-opencode-integration.md` | Full integration guide |
 
 ### Settings Summary
 
@@ -45,19 +58,15 @@ Settings in `.claude/settings.json` control behavior:
 - **quality.minQaScore**: Minimum QA score (default: 85)
 - **quality.thresholds**: Scoped quality thresholds (spec coverage, impl complete, test coverage, QA)
 
-### Complexity Scaling
+### Bypass Paths (Use Sparingly)
 
-Before starting tasks, assess complexity (1-5):
-- **SCOPE**: Single function → Multiple systems
-- **UNCERTAINTY**: Known solution → Unprecedented
-- **RISK**: Safe → Critical
+Every bypass emits a `flow.bypass` event to `.xcoder/flow-events.jsonl`:
 
-| Score | Level | Methodology |
-|-------|-------|-------------|
-| 1.0-1.5 | TRIVIAL | Do → Verify → Done |
-| 1.6-2.5 | SIMPLE | Plan → Do → Test |
-| 2.6-3.5 | MODERATE | Tasks → [Do → Verify → Regression]* |
-| 3.6+ | COMPLEX | Phases → Checkpoints → User approval |
+- `XCODER_ALLOW_INTEGRATION_EDIT=1` — Hotfix on main (I-1, I-2)
+- `XCODER_SKIP_QA_GATE=1` — Skip typecheck gate (I-6)
+- `XCODER_SKIP_ISSUE_REF=1` — Skip issue reference (I-8)
+- `XCODER_AUTO_PR=1` — Auto-create PR on session end (I-9)
+- `git commit --no-verify` — Standard git escape hatch
 
 
 ---
