@@ -1,6 +1,6 @@
 {
   "name": "@decoperations/owasp-wtf",
-  "version": "0.2.5",
+  "version": "0.2.6",
   "description": "AI-powered OWASP security auditing CLI",
   "type": "module",
   "publishConfig": {
