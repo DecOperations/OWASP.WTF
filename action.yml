@@ -161,6 +161,20 @@ runs:
           asset_url="$(printf '%s' "$release_json" \
             | jq -r --arg name "$asset_name" \
                 '.assets[]? | select(.name == $name) | .url')"
+          # Fallback for older releases with mismatched tarball names (issue #70):
+          # semantic-release previously failed to commit the bumped package.json,
+          # so pnpm pack produced the same 0.2.0 tarball for every cli-v0.2.x tag.
+          if [ -z "$asset_url" ]; then
+            fallback_url="$(printf '%s' "$release_json" \
+              | jq -r '.assets[]? | select(.name | endswith(".tgz")) | .url' | head -n1)"
+            fallback_name="$(printf '%s' "$release_json" \
+              | jq -r '.assets[]? | select(.name | endswith(".tgz")) | .name' | head -n1)"
+            if [ -n "$fallback_url" ]; then
+              echo "::warning::Release ${tag} asset name mismatch. Expected ${asset_name}, found ${fallback_name}."
+              asset_url="$fallback_url"
+              asset_name="$fallback_name"
+            fi
+          fi
           if [ -z "$asset_url" ]; then
             echo "::error::Release ${tag} has no asset named ${asset_name}."
             echo "::error::Older releases may pre-date the tarball-asset rollout — pin a newer version (e.g. version: '0.2.3+') or use version: 'latest'."
