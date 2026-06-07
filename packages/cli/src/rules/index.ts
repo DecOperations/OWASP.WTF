@@ -5,6 +5,7 @@ import { a03Rules } from './a03-injection.js';
 import { a05Rules } from './a05-security-misconfiguration.js';
 import { a07Rules } from './a07-auth-failures.js';
 import { a09Rules } from './a09-logging-failures.js';
+import { a10Rules } from './a10-ssrf.js';
 
 /**
  * All registered security rules organized by OWASP category.
@@ -16,6 +17,7 @@ export const allRules: Rule[] = [
   ...a05Rules,
   ...a07Rules,
   ...a09Rules,
+  ...a10Rules,
 ];
 
 /**

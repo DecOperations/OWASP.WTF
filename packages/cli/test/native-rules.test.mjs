@@ -57,6 +57,11 @@ const FIXTURES = [
     category: 'A09:2021-Logging-Failures',
     expectedRules: ['A09-SENSITIVE-LOG', 'A09-CONSOLE-SENSITIVE', 'A09-EMPTY-CATCH'],
   },
+  {
+    file: 'a10-ssrf.ts',
+    category: 'A10:2021-SSRF',
+    expectedRules: ['A10-SSRF'],
+  },
 ];
 
 function stageFixtures() {
@@ -67,6 +72,9 @@ function stageFixtures() {
     copyFileSync(join(FIXTURES_DIR, f.file), join(srcDir, f.file));
   }
   copyFileSync(join(FIXTURES_DIR, 'clean.ts'), join(srcDir, 'clean.ts'));
+  // A10 additional fixtures
+  copyFileSync(join(FIXTURES_DIR, 'a10-ssrf-vuln.py'), join(srcDir, 'a10-ssrf-vuln.py'));
+  copyFileSync(join(FIXTURES_DIR, 'a10-ssrf-clean.ts'), join(srcDir, 'a10-ssrf-clean.ts'));
   return { dir, srcDir };
 }
 
@@ -148,6 +156,22 @@ test('clean.ts produces zero findings', () => {
     findings.length,
     0,
     `clean.ts must produce 0 findings; got ${findings.length}: ${findings.map((f) => `${f.id} (${f.severity})`).join(', ')}`,
+  );
+});
+
+// ─── A10 additional fixtures ───────────────────────────────────────────────
+test('a10-ssrf-vuln.py produces SSRF findings', () => {
+  const findings = report.findings.filter((f) => (f.file || '').endsWith('a10-ssrf-vuln.py'));
+  assert.ok(findings.length > 0, 'Expected at least one finding in a10-ssrf-vuln.py');
+  assert.ok(findings.some((f) => f.id === 'A10-SSRF'), 'Expected A10-SSRF to fire in py fixture');
+});
+
+test('a10-ssrf-clean.ts produces zero findings', () => {
+  const findings = report.findings.filter((f) => (f.file || '').endsWith('a10-ssrf-clean.ts'));
+  assert.equal(
+    findings.length,
+    0,
+    `a10-ssrf-clean.ts must produce 0 findings; got ${findings.length}: ${findings.map((f) => `${f.id} (${f.severity})`).join(', ')}`,
   );
 });
 

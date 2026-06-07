@@ -50,7 +50,7 @@ installed (see `owasp-wtf doctor`):
 
 | Layer | Tool | OWASP categories |
 |-------|------|------------------|
-| Native rules (bundled) | regex rules | A01, A02, A03, A05, A07, A09 |
+| Native rules (bundled) | regex rules | A01, A02, A03, A05, A07, A09, A10 |
 | SAST | [Semgrep](https://semgrep.dev) | A01–A05, A07, A08 |
 | Secrets | [Gitleaks](https://github.com/gitleaks/gitleaks) | A02, A05 |
 | Dependencies / IaC | [Trivy](https://trivy.dev) | A05, A06, A08 |
