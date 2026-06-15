@@ -22,7 +22,7 @@
     "ora": "^9.4.0"
   },
   "devDependencies": {
-    "@types/node": "^22.19.19",
+    "@types/node": "^22.19.21",
     "ajv": "^8",
     "ajv-draft-04": "^1",
     "ajv-formats": "^3",
