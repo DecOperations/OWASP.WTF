@@ -19,7 +19,7 @@
   "dependencies": {
     "chalk": "^5.4.1",
     "commander": "^15.0.0",
-    "ora": "^9.4.0"
+    "ora": "^9.4.1"
   },
   "devDependencies": {
     "@types/node": "^22.19.21",
